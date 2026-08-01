@@ -26,6 +26,18 @@
 
 本项目是 OpenCode 的客户端和网关，不包含 OpenCode CLI 本身。使用前需要单独安装 OpenCode，并确保 `opencode serve` 可以运行。
 
+## Linux 目录约定
+
+Linux 服务器只保留一份 Web 项目：
+
+```text
+/opt/opencode-mobile-server/                 本项目源码、页面和 Node 网关
+/etc/opencode-mobile-server/opencode.env    密码等运行配置
+/root/.opencode/                              OpenCode CLI 本身
+```
+
+Nginx 只负责 HTTPS、域名和 `/opencode/` 反向代理，不再从 `/www/wwwroot` 复制或读取前端文件。这样 Windows 和 Linux 使用同一个项目目录结构，升级时只需要更新 `/opt/opencode-mobile-server`。
+
 ## 默认密码和修改方式
 
 新部署的默认密码是：
@@ -100,8 +112,6 @@ New-NetFirewallRule -DisplayName "OpenCode Mobile Server" -Direction Inbound -Pr
 powershell -ExecutionPolicy Bypass -File .\scripts\start-windows.ps1 -SkipBackend
 ```
 
-也可以双击或在命令行运行 `scripts\start-windows.bat`。
-
 ## Linux 服务器和域名部署
 
 ### 环境要求
@@ -145,8 +155,6 @@ sudo bash scripts/deploy-linux.sh --skip-nginx
 ```bash
 sudo OPENCODE_BIN=/path/to/opencode bash scripts/deploy-linux.sh example.com
 ```
-
-旧版的 `scripts/install-linux.sh` 仍然保留，用于只安装 Web 网关。
 
 ### 安装 OpenCode API 服务
 
@@ -258,6 +266,18 @@ Phone or desktop browser
 
 This project is an OpenCode client and gateway. It does not include or replace the OpenCode CLI. Install OpenCode separately and make sure `opencode serve` is available.
 
+### Linux Directory Layout
+
+Linux keeps one Web project directory:
+
+```text
+/opt/opencode-mobile-server/                 project files and Node gateway
+/etc/opencode-mobile-server/opencode.env    password and runtime settings
+/root/.opencode/                              OpenCode CLI itself
+```
+
+Nginx is only responsible for HTTPS, the domain, and reverse-proxying `/opencode/`. It no longer serves a second frontend copy from `/www/wwwroot`. Windows and Linux therefore use the same project layout.
+
 ### Default Password and Password Changes
 
 The default password for a new installation is:
@@ -332,8 +352,6 @@ If OpenCode is already running as a separate service, start only the web gateway
 powershell -ExecutionPolicy Bypass -File .\scripts\start-windows.ps1 -SkipBackend
 ```
 
-You can also run `scripts\start-windows.bat`.
-
 ### Linux Server and Domain Deployment
 
 #### Requirements
@@ -377,8 +395,6 @@ If OpenCode is not in `PATH`, provide its binary path:
 ```bash
 sudo OPENCODE_BIN=/path/to/opencode bash scripts/deploy-linux.sh example.com
 ```
-
-The older `scripts/install-linux.sh` is still available when you only want to install the web gateway.
 
 #### Install the OpenCode API Service
 
