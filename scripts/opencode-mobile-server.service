@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenCode Mobile Server Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=__INSTALL_DIR__
+EnvironmentFile=-/etc/opencode-mobile-server/opencode.env
+Environment=OPENCODE_WEB_HOST=127.0.0.1
+Environment=OPENCODE_WEB_PORT=8787
+ExecStart=__NODE_BIN__ __INSTALL_DIR__/server.mjs
+Restart=always
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target

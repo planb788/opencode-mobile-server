@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+<meta name="theme-color" content="#0a0a0a" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>OpenCode</title>
+<link rel="manifest" href="/opencode/manifest.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="/opencode/icon.svg" />
+<style>
+:root {
+  --bg: #0a0a0a;
+  --bg2: #141414;
+  --panel: #1a1a1a;
+  --border: #262626;
+  --text: #e6e6e6;
+  --muted: #8a8a8a;
+  --accent: #5eead4;
+  --accent-dim: #134e4a;
+  --user-bubble: #2a2a2a;
+  --err: #f87171;
+  --busy: #fbbf24;
+  --ok: #34d399;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 780px;
+  margin: 0 auto;
+  position: relative;
+}
+/* ---------- header ---------- */
+header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top)) 12px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  z-index: 5;
+}
+header .btn {
+  background: none; border: none; color: var(--text);
+  width: 36px; height: 36px; border-radius: 8px;
+  font-size: 18px; cursor: pointer; flex: none;
+  display: flex; align-items: center; justify-content: center;
+}
+header .btn:active { background: var(--panel); }
+#title { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#status-dot {
+  width: 9px; height: 9px; border-radius: 50%; background: var(--ok);
+  flex: none; transition: background .2s;
+}
+#status-dot.busy { background: var(--busy); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .4; } }
+header select {
+  background: var(--panel); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 5px 6px; font-size: 12px; max-width: 110px;
+  appearance: none; cursor: pointer;
+}
+/* ---------- messages ---------- */
+#msgs {
+  flex: 1; overflow-y: auto; padding: 14px 14px 8px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+.msg { margin-bottom: 14px; display: flex; flex-direction: column; }
+.msg.user { align-items: flex-end; }
+.msg .role { font-size: 11px; color: var(--muted); margin-bottom: 4px; padding: 0 2px; }
+.msg.user .bubble {
+  background: var(--user-bubble); border-radius: 14px 14px 4px 14px;
+  padding: 9px 12px; max-width: 88%; white-space: pre-wrap; word-break: break-word;
+}
+.msg.assistant .bubble {
+  background: transparent; max-width: 100%;
+}
+.assistant .parts { width: 100%; }
+.assistant .text {
+  white-space: pre-wrap; word-break: break-word;
+  background: var(--panel); border-radius: var(--radius);
+  padding: 10px 12px; border: 1px solid var(--border);
+}
+.msg.error .text { border-color: #7f1d1d; color: #fca5a5; }
+/* markdown-lite */
+.md pre {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; overflow-x: auto; margin: 8px 0; font-size: 12.5px;
+  line-height: 1.5; position: relative;
+}
+.md pre .copy {
+  position: absolute; top: 6px; right: 6px; background: var(--panel);
+  border: 1px solid var(--border); color: var(--muted); font-size: 11px;
+  padding: 2px 8px; border-radius: 6px; cursor: pointer;
+}
+.md pre code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.md :not(pre) > code {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+  padding: 1px 5px; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.md p { margin: 4px 0; }
+.md h1, .md h2, .md h3 { margin: 10px 0 6px; line-height: 1.3; }
+.md h1 { font-size: 17px; } .md h2 { font-size: 15.5px; } .md h3 { font-size: 14.5px; }
+.md ul, .md ol { padding-left: 20px; margin: 6px 0; }
+.md blockquote { border-left: 3px solid var(--border); color: var(--muted); padding-left: 10px; margin: 8px 0; }
+.md a { color: var(--accent); text-decoration: none; word-break: break-all; }
+.md table { border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+.md th, .md td { border: 1px solid var(--border); padding: 4px 8px; }
+.md hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+/* reasoning / tool / chips */
+.reasoning {
+  color: var(--muted); font-size: 13px; margin: 2px 0 6px;
+  border-left: 2px solid var(--border); padding-left: 8px;
+  max-height: 120px; overflow: hidden; position: relative;
+}
+.reasoning.expanded { max-height: none; }
+.reasoning .hint { cursor: pointer; user-select: none; }
+.toolcard {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+  margin: 6px 0; font-size: 13px; overflow: hidden;
+}
+.toolcard .toolhead { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; }
+.toolcard .toolhead .name { font-family: ui-monospace, Menlo, monospace; color: var(--muted); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toolcard .state { font-size: 11px; padding: 1px 7px; border-radius: 10px; flex: none; }
+.state.running { background: #78350f; color: #fcd34d; }
+.state.completed { background: #064e3b; color: #6ee7b7; }
+.state.error { background: #7f1d1d; color: #fca5a5; }
+.toolcard .toolbody { display: none; padding: 0 10px 10px; }
+.toolcard.open .toolbody { display: block; }
+.toolcard pre { background: var(--bg); border-radius: 6px; padding: 8px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow-y: auto; }
+.toolcard .label { color: var(--muted); font-size: 11px; margin: 8px 0 3px; }
+.chip {
+  display: inline-block; background: var(--accent-dim); color: var(--accent);
+  border-radius: 6px; padding: 1px 8px; font-size: 12px; margin: 2px 2px 2px 0;
+}
+.cursor-blink::after { content: "▋"; color: var(--accent); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+/* ---------- empty state ---------- */
+#empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--muted); gap: 8px; padding: 20px; text-align: center; }
+#empty .logo { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, #134e4a, #0f172a); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: var(--accent); }
+#history-top { display: flex; justify-content: center; padding: 4px 0 10px; }
+#history-top[hidden] { display: none; }
+#load-older { background: var(--panel); border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+#load-older:active { color: var(--accent); border-color: var(--accent-dim); }
+#load-older:disabled { opacity: .55; cursor: default; }
+#message-list { min-width: 0; }
+/* ---------- composer ---------- */
+#composer {
+  border-top: 1px solid var(--border); background: var(--bg);
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  display: flex; gap: 8px; align-items: flex-end;
+}
+#attach-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: none; flex: none;
+  background: var(--panel); color: var(--muted); font-size: 18px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+#attach-btn:active { color: var(--accent); }
+#attach-list { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 12px 0; }
+.atchip {
+  display: flex; align-items: center; gap: 6px; max-width: 100%;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 4px 6px 4px 10px; font-size: 12px; color: var(--muted);
+}
+.atchip .an { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+.atchip .as { font-size: 11px; flex: none; }
+.atchip .ax { border: none; background: none; color: var(--muted); font-size: 14px; padding: 0 4px; cursor: pointer; }
+.atchip .ax:active { color: var(--err); }
+#input-wrap { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 8px 12px; }
+#input {
+  width: 100%; background: none; border: none; color: var(--text);
+  font: inherit; font-size: 15px; resize: none; outline: none;
+  max-height: 120px; line-height: 1.5;
+}
+#input::placeholder { color: var(--muted); }
+#send {
+  width: 40px; height: 40px; border-radius: 50%; border: none; flex: none;
+  background: var(--accent); color: #04211d; font-size: 17px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+#send:disabled { background: var(--panel); color: var(--muted); }
+#send.abort { background: var(--err); color: #fff; font-size: 14px; }
+/* ---------- drawer ---------- */
+#scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 20; opacity: 0; pointer-events: none; transition: opacity .2s; }
+#scrim.open { opacity: 1; pointer-events: auto; }
+#drawer {
+  position: fixed; top: 0; bottom: 0; left: 0; width: min(300px, 84vw);
+  background: var(--bg2); z-index: 21; border-right: 1px solid var(--border);
+  transform: translateX(-102%); transition: transform .22s ease;
+  display: flex; flex-direction: column;
+}
+#drawer.open { transform: none; }
+#drawer header { padding-top: calc(14px + env(safe-area-inset-top)); }
+#drawer .d-title { font-size: 14px; font-weight: 700; flex: 1; }
+#session-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
+.sess-item {
+  display: flex; align-items: center; gap: 8px; padding: 10px 10px;
+  border-radius: 8px; cursor: pointer;
+}
+.sess-item:active { background: var(--panel); }
+.sess-item.active { background: var(--panel); }
+.sess-item .t { flex: 1; min-width: 0; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sess-item .time { font-size: 11px; color: var(--muted); flex: none; }
+.sess-item .del { background: none; border: none; color: var(--muted); font-size: 15px; padding: 2px 6px; border-radius: 6px; cursor: pointer; flex: none; display: none; }
+.sess-item.active .del { display: block; }
+.sess-item .del:active { color: var(--err); }
+.session-status { color: var(--muted); text-align: center; font-size: 13px; padding: 18px 10px; }
+#drawer footer { padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); display: flex; gap: 8px; }
+#drawer footer button {
+  flex: 1; background: var(--panel); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px; font-size: 13px; cursor: pointer;
+}
+#drawer footer .new { color: var(--accent); }
+/* ---------- login ---------- */
+#login {
+  position: fixed; inset: 0; z-index: 30; background: var(--bg);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+#login.hidden { display: none; }
+#login .card { width: 100%; max-width: 340px; text-align: center; }
+#login .logo { width: 72px; height: 72px; border-radius: 18px; background: linear-gradient(135deg, #134e4a, #0f172a); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; color: var(--accent); margin: 0 auto 16px; }
+#login h1 { font-size: 18px; margin-bottom: 6px; }
+#login p { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+#login input {
+  width: 100%; background: var(--panel); border: 1px solid var(--border); color: var(--text);
+  border-radius: 10px; padding: 12px 14px; font-size: 15px; outline: none; margin-bottom: 12px;
+}
+#login button {
+  width: 100%; background: var(--accent); color: #04211d; border: none; font-size: 15px;
+  font-weight: 700; border-radius: 10px; padding: 12px; cursor: pointer;
+}
+#login .err { color: var(--err); font-size: 13px; margin-top: 10px; min-height: 18px; }
+/* ---------- toast ---------- */
+#toast {
+  position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(20px); background: #262626; color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px; padding: 9px 16px;
+  font-size: 13.5px; opacity: 0; pointer-events: none; transition: all .25s;
+  z-index: 40; max-width: 86vw; text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="btn" id="menu-btn">☰</button>
+    <div id="title">OpenCode</div>
+    <select id="model-select" title="模型"></select>
+    <select id="agent-select" title="Agent"></select>
+    <button class="btn" id="new-btn" title="新会话">✚</button>
+    <span id="status-dot"></span>
+  </header>
+  <div id="msgs">
+    <div id="history-top" hidden>
+      <button id="load-older" type="button">加载更早消息</button>
+    </div>
+    <div id="message-list"></div>
+    <div id="empty">
+      <div class="logo">&gt;_</div>
+      <div id="empty-txt">连接到本地 OpenCode 服务器</div>
+      <div style="font-size:12px">在下方输入消息开始</div>
+    </div>
+  </div>
+  <div id="attach-list"></div>
+  <div id="composer">
+    <button id="attach-btn" title="上传文件">📎</button>
+    <div id="input-wrap">
+      <textarea id="input" rows="1" placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea>
+    </div>
+    <button id="send" title="发送">➤</button>
+  </div>
+</div>
+<input type="file" id="file-input" multiple style="display:none" />
+
+<div id="scrim"></div>
+<aside id="drawer">
+  <header>
+    <span class="d-title">会话</span>
+    <button class="btn" id="close-drawer">✕</button>
+  </header>
+  <div id="session-list"></div>
+  <footer>
+    <button class="new" id="new-sess">✚ 新会话</button>
+    <button id="logout-btn">退出登录</button>
+  </footer>
+</aside>
+
+<div id="login" class="hidden">
+  <div class="card">
+    <div class="logo">&gt;_</div>
+    <h1>OpenCode</h1>
+    <p>输入访问密码以连接到服务器</p>
+    <input type="password" id="pwd" placeholder="访问密码" autocomplete="current-password" />
+    <button id="login-btn">连接</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+const API = "/opencode/api";
+const $ = (s) => document.querySelector(s);
+let PWD = localStorage.getItem("oc_pwd") || "";
+let sseAbort = null, sseRetry = 0, sseTimer = null;
+let sessionsRequest = null;
+let historyAbort = null;
+let historyRequestId = 0;
+const HISTORY_PAGE_SIZE = 40;
+const state = {
+  sessions: [], current: null, running: false,
+  providers: [], models: [], agents: [],
+  model: JSON.parse(localStorage.getItem("oc_model") || "null"),
+  agent: localStorage.getItem("oc_agent") || "build",
+  msgs: new Map(), // sid -> [{id, info, parts}]
+  history: new Map(), // sid -> { before, hasMore, loading }
+  msgEls: {},      // mid -> DOM element
+  loading: false,
+  sessionsLoading: false
+};
+
+/* ---------- api ---------- */
+function authHdr() { return { "Authorization": "Basic " + btoa("opencode:" + PWD) }; }
+async function api(path, opts = {}) {
+  const { withMeta = false, ...fetchOpts } = opts;
+  const res = await fetch(API + path, {
+    ...fetchOpts,
+    headers: { "Content-Type": "application/json", ...authHdr(), ...(fetchOpts.headers || {}) }
+  });
+  if (res.status === 401) { showLogin(); throw new Error("401"); }
+  if (!res.ok) {
+    let msg = res.status;
+    try { const j = await res.json(); msg = (j.message && j.message.data && j.message.data.message) || j.message || msg; } catch (e) {}
+    throw new Error(msg);
+  }
+  let data = null;
+  if (res.status !== 204) {
+    const ct = res.headers.get("content-type") || "";
+    data = ct.includes("json") ? await res.json() : await res.text();
+  }
+  return withMeta ? { data, nextCursor: res.headers.get("X-Next-Cursor") } : data;
+}
+
+/* ---------- render: markdown-lite ---------- */
+function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function inlineMd(s) {
+  s = esc(s);
+  s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+  s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return s;
+}
+function md(text) {
+  const lines = text.split("\n");
+  let out = "", inCode = false, codeBuf = [], codeLang = "", inList = false;
+  const flushList = () => { if (inList) { out += "</ul>"; inList = false; } };
+  for (const line of lines) {
+    if (line.trim().startsWith("```")) {
+      if (inCode) {
+        out += '<pre><button class="copy" data-c="' + esc(codeBuf.join("\n")) + '">复制</button><code>' + esc(codeBuf.join("\n")) + "</code></pre>";
+        codeBuf = []; inCode = false;
+      } else { flushList(); inCode = true; codeLang = line.trim().slice(3).trim(); }
+      continue;
+    }
+    if (inCode) { codeBuf.push(line); continue; }
+    const t = line.trim();
+    if (!t) { flushList(); out += "</p><p>"; continue; }
+    if (/^#{1,3}\s/.test(t)) { flushList(); out += `<h${t.indexOf(" ")}>${inlineMd(t.replace(/^#{1,3}\s/, ""))}</h${t.indexOf(" ")}></h${t.indexOf(" ")}>`; continue; }
+    if (/^>\s?/.test(t)) { flushList(); out += `<blockquote>${inlineMd(t.replace(/^>\s?/, ""))}</blockquote>`; continue; }
+    if (/^\s*[-*]\s/.test(t)) { if (!inList) { inList = true; out += "<ul>"; } out += `<li>${inlineMd(t.replace(/^\s*[-*]\s/, ""))}</li>`; continue; }
+    if (/^\s*\d+\.\s/.test(t)) { flushList(); out += `<p>${inlineMd(t)}</p>`; continue; }
+    if (/^---+$/.test(t)) { flushList(); out += "<hr/>"; continue; }
+    flushList();
+    if (/^\|.*\|$/.test(t) && t.split("|").length >= 3) {
+      const cells = t.split("|").slice(1, -1).map(c => `<td>${inlineMd(c.trim())}</td>`).join("");
+      out += `<table><tr>${cells}</tr></table>`;
+      continue;
+    }
+    out += inlineMd(t) + "<br/>";
+  }
+  if (inCode) out += "<pre><code>" + esc(codeBuf.join("\n")) + "</code></pre>";
+  flushList();
+  return out;
+}
+
+/* ---------- render: message parts ---------- */
+function renderPart(p, streaming) {
+  switch (p.type) {
+    case "text":
+      return `<div class="text${streaming ? " cursor-blink" : ""}"><div class="md">${md(p.text || "")}</div></div>`;
+    case "reasoning":
+      return `<div class="reasoning"><span class="hint">🧠 思考中… ▾</span>${p.text ? md(p.text) : ""}</div>`;
+    case "tool": {
+      const st = p.state || {};
+      const status = st.status || "running";
+      const name = (p.tool && (p.tool.title || p.tool.id)) || p.tool || "tool";
+      const input = st.input && (st.input.command || JSON.stringify(st.input).slice(0, 300));
+      const output = st.output != null ? String(st.output) : "";
+      return `<div class="toolcard ${status === "running" ? "running" : ""}">
+        <div class="toolhead"><span>🔧</span><span class="name">${esc(name)}</span>
+        <span class="state ${esc(status)}">${esc(status)}</span><span style="color:var(--muted)">▾</span></div>
+        <div class="toolbody">
+          ${input ? `<div class="label">输入</div><pre>${esc(input)}</pre>` : ""}
+          ${output ? `<div class="label">输出</div><pre>${esc(output)}</pre>` : ""}
+        </div></div>`;
+    }
+    case "file": {
+      const fname = p.filename || (p.file && p.file.path) || "";
+      const isImg = (p.mime || "").startsWith("image/") && p.url && p.url.startsWith("data:");
+      const extra = isImg ? `<img src="${p.url}" style="max-width:160px;border-radius:8px;display:block;margin:6px 0" alt="" />` : "";
+      return `<span class="chip">📄 ${esc(fname)}</span>${extra}`;
+    }
+    case "agent":
+      return `<span class="chip">🤖 ${esc(p.agent || "")}</span>`;
+    default:
+      return "";
+  }
+}
+function renderMessage(entry, streaming) {
+  const role = entry.info.role;
+  if (role === "user") {
+    const texts = entry.parts.filter(p => p.part.type === "text").map(p => p.part.text).join("\n");
+    const files = entry.parts.filter(p => p.part.type === "file").map(p => `<span class="chip">📄 ${esc(p.part.filename || "")}</span>`).join("");
+    return `<div class="msg user"><div class="role">你</div><div class="bubble">${esc(texts)}${files}</div></div>`;
+  }
+  if (entry.info.error) {
+    const emsg = entry.info.error.data ? entry.info.error.data.message : entry.info.error.message;
+    return `<div class="msg assistant error"><div class="role">✕</div><div class="bubble"><div class="text">错误: ${esc(emsg || JSON.stringify(entry.info.error))}</div></div></div>`;
+  }
+  const last = entry.parts.length - 1;
+  const html = entry.parts.map((p, i) => renderPart(p.part, streaming && i === last)).join("");
+  const model = entry.info.model && entry.info.model.modelID ? entry.info.model.modelID : "";
+  return `<div class="msg assistant" data-mid="${entry.id}"><div class="role">${esc(model)}</div><div class="bubble"><div class="parts">${html}</div></div></div>`;
+}
+
+/* ---------- render: whole chat ---------- */
+function findMsgEntry(sid, mid) {
+  const s = state.msgs.get(sid);
+  return s ? s.find(e => e.id === mid) : null;
+}
+function upsertMsg(sid, mid, info) {
+  if (!state.msgs.has(sid)) state.msgs.set(sid, []);
+  let e = findMsgEntry(sid, mid);
+  if (!e) {
+    const arr = state.msgs.get(sid);
+    const role = (info && info.role) || "assistant";
+    const phIdx = arr.findIndex(x => x.pending && x.info.role === role);
+    e = { id: mid, info: info || { role: role, model: null }, parts: [] };
+    if (phIdx >= 0) arr[phIdx] = e; else arr.push(e);
+  }
+  else if (info) e.info = { ...e.info, ...info };
+  return e;
+}
+function upsertPart(sid, mid, pid, part) {
+  const e = upsertMsg(sid, mid, null);
+  let i = e.parts.findIndex(p => p.id === pid);
+  if (i < 0) { e.parts.push({ id: pid, part }); }
+  else {
+    const prev = e.parts[i].part;
+    e.parts[i].part = part ? { ...part, text: part.text ?? prev.text, state: part.state ?? prev.state } : e.parts[i].part;
+  }
+}
+function deltaPart(sid, mid, pid, delta) {
+  let e = findMsgEntry(sid, mid);
+  if (!e) e = upsertMsg(sid, mid, null);
+  let i = e.parts.findIndex(p => p.id === pid);
+  if (i < 0) { e.parts.push({ id: pid, part: { type: "text", text: "" } }); i = e.parts.length - 1; }
+  if (typeof delta === "string") e.parts[i].part.text = (e.parts[i].part.text || "") + delta;
+  else if (delta && typeof delta.text === "string") e.parts[i].part.text = (e.parts[i].part.text || "") + delta.text;
+}
+function renderChat() {
+  const box = $("#msgs");
+  const list = $("#message-list");
+  const empty = $("#empty");
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+  const sid = state.current;
+  const entries = sid ? (state.msgs.get(sid) || []) : [];
+  updateHistoryControls(sid, entries.length > 0);
+  if (!entries.length) {
+    list.innerHTML = "";
+    empty.style.display = "flex";
+    if (sid && String(sid).startsWith("pending-")) $("#empty-txt").textContent = "创建新会话…";
+    else if (state.loading) $("#empty-txt").textContent = "加载会话中…";
+    else $("#empty-txt").textContent = "连接到本地 OpenCode 服务器";
+    state.msgEls = {};
+    box.scrollTop = box.scrollHeight;
+    return;
+  }
+  empty.style.display = "none";
+  list.innerHTML = entries.map((e, i) => renderMessage(e, state.running && i === entries.length - 1)).join("");
+  state.msgEls = {};
+  list.querySelectorAll(".msg").forEach(el => { state.msgEls[el.dataset.mid] = el; });
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+function updateHistoryControls(sid, hasMessages) {
+  if (sid !== state.current) return;
+  const top = $("#history-top");
+  const button = $("#load-older");
+  const meta = sid ? state.history.get(sid) : null;
+  top.hidden = !hasMessages || !meta?.hasMore;
+  button.disabled = Boolean(meta?.loading);
+  button.textContent = meta?.loading ? "加载中…" : "加载更早消息";
+}
+function renderMsg(mid) {
+  const entries = state.msgs.get(state.current) || [];
+  const idx = entries.findIndex(e => e.id === mid);
+  if (idx < 0) return;
+  const old = state.msgEls[mid];
+  if (!old) { renderChat(); return; }
+  const box = $("#msgs");
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+  const streaming = state.running && idx === entries.length - 1;
+  old.outerHTML = renderMessage(entries[idx], streaming);
+  state.msgEls[mid] = $("#message-list").querySelector(`.msg[data-mid="${mid}"]`);
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+let pendingRenders = new Set(), rafQueued = false;
+function queueMsgRender(mid) {
+  pendingRenders.add(mid);
+  if (rafQueued) return;
+  rafQueued = true;
+  requestAnimationFrame(() => {
+    rafQueued = false;
+    const batch = pendingRenders;
+    pendingRenders = new Set();
+    for (const m of batch) renderMsg(m);
+  });
+}
+function scrollBottom() { const box = $("#msgs"); box.scrollTop = box.scrollHeight; }
+
+/* ---------- new session (optimistic) ---------- */
+let pendingNewSession = null;
+
+/* ---------- sessions ---------- */
+function fmtTime(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  const now = Date.now();
+  if (now - ts < 60000) return "刚刚";
+  if (now - ts < 3600000) return Math.floor((now - ts) / 60000) + "分钟前";
+  if (now - ts < 86400000) return Math.floor((now - ts) / 3600000) + "小时前";
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+function historyMeta(sid) {
+  let meta = state.history.get(sid);
+  if (!meta) {
+    meta = { before: null, hasMore: false, loading: false };
+    state.history.set(sid, meta);
+  }
+  return meta;
+}
+function isAbortError(error) {
+  return error && error.name === "AbortError";
+}
+async function loadSessions({ force = false } = {}) {
+  if (!force && state.sessions.length) {
+    renderSessions();
+    return state.sessions;
+  }
+  if (sessionsRequest) return sessionsRequest;
+  state.sessionsLoading = true;
+  renderSessions();
+  sessionsRequest = api("/session")
+    .then(list => {
+      state.sessions = (list || []).sort((a, b) => (b.time?.updated || 0) - (a.time?.updated || 0));
+      return state.sessions;
+    })
+    .finally(() => {
+      sessionsRequest = null;
+      state.sessionsLoading = false;
+      renderSessions();
+    });
+  return sessionsRequest;
+}
+function renderSessions() {
+  const box = $("#session-list");
+  if (!state.sessions.length) {
+    box.innerHTML = `<div class="session-status">${state.sessionsLoading ? "加载会话中…" : "暂无会话"}</div>`;
+    return;
+  }
+  box.innerHTML = state.sessions.map(s => `
+    <div class="sess-item ${s.id === state.current ? "active" : ""}" data-id="${s.id}">
+      <span class="t">${esc(s.title || "无标题")}</span>
+      <span class="time">${fmtTime(s.time?.updated)}</span>
+      <button class="del" data-del="${s.id}">✕</button>
+    </div>`).join("");
+}
+function setTitle(id) {
+  const s = state.sessions.find(x => x.id === id);
+  $("#title").textContent = (s && s.title) || "OpenCode";
+}
+async function switchSession(id) {
+  if (state.current === id) { closeDrawer(); return; }
+  const requestId = ++historyRequestId;
+  if (historyAbort) historyAbort.abort();
+  const controller = new AbortController();
+  historyAbort = controller;
+  state.current = id;
+  state.running = false;
+  updateRunningUI();
+  localStorage.setItem("oc_session", id);
+  state.msgEls = {};
+  renderSessions();
+  closeDrawer();
+  setTitle(id);
+  if (state.msgs.has(id)) {
+    state.loading = false;
+    renderChat();
+    if (historyAbort === controller) historyAbort = null;
+    return;
+  }
+  state.loading = true;
+  renderChat();
+  try {
+    await loadHistory(id, { signal: controller.signal });
+  } catch (e) {
+    if (!isAbortError(e) && state.current === id) toast("加载会话失败: " + e.message);
+  }
+  if (state.current === id && historyRequestId === requestId) {
+    state.loading = false;
+    renderChat();
+  }
+  if (historyAbort === controller) historyAbort = null;
+}
+async function loadHistory(sid, { before = null, signal } = {}) {
+  const meta = historyMeta(sid);
+  meta.loading = true;
+  updateHistoryControls(sid, Boolean(state.msgs.get(sid)?.length));
+  try {
+    const query = new URLSearchParams({ limit: String(HISTORY_PAGE_SIZE) });
+    if (before) query.set("before", before);
+    const result = await api(`/session/${encodeURIComponent(sid)}/message?${query}`, { signal, withMeta: true });
+    const msgs = result.data;
+    const entries = (msgs || []).filter(m => m && m.info && m.info.id).map(m => ({
+      id: m.info.id,
+      info: m.info,
+      parts: (m.parts || []).map(p => ({ id: p.id, part: p }))
+    }));
+    const current = state.msgs.get(sid) || [];
+    if (before) {
+      const existing = new Set(current.map(entry => entry.id));
+      state.msgs.set(sid, entries.filter(entry => !existing.has(entry.id)).concat(current));
+    } else {
+      state.msgs.set(sid, entries);
+    }
+    meta.before = result.nextCursor || null;
+    meta.hasMore = Boolean(result.nextCursor);
+  } finally {
+    meta.loading = false;
+    updateHistoryControls(sid, Boolean(state.msgs.get(sid)?.length));
+  }
+}
+async function loadOlderHistory() {
+  const sid = state.current;
+  const meta = sid && state.history.get(sid);
+  if (!sid || !meta || !meta.hasMore || meta.loading) return;
+  const box = $("#msgs");
+  const previousHeight = box.scrollHeight;
+  const previousTop = box.scrollTop;
+  const requestId = ++historyRequestId;
+  if (historyAbort) historyAbort.abort();
+  const controller = new AbortController();
+  historyAbort = controller;
+  let rendered = false;
+  try {
+    await loadHistory(sid, { before: meta.before, signal: controller.signal });
+    if (state.current === sid && historyRequestId === requestId) {
+      renderChat();
+      rendered = true;
+      requestAnimationFrame(() => {
+        if (state.current === sid && historyRequestId === requestId) {
+          box.scrollTop = box.scrollHeight - previousHeight + previousTop;
+        }
+      });
+    }
+  } catch (e) {
+    if (!isAbortError(e) && state.current === sid) toast("加载更早消息失败: " + e.message);
+  } finally {
+    if (!rendered && state.current === sid && historyRequestId === requestId) renderChat();
+    if (historyAbort === controller) historyAbort = null;
+  }
+}
+async function newSession() {
+  if (pendingNewSession) return pendingNewSession;
+  historyRequestId++;
+  if (historyAbort) { historyAbort.abort(); historyAbort = null; }
+  const prev = state.current;
+  const pendId = "pending-new-" + Date.now();
+  state.current = pendId;
+  state.running = false;
+  state.loading = false;
+  updateRunningUI();
+  state.msgs.set(pendId, []);
+  state.msgEls = {};
+  localStorage.setItem("oc_session", "");
+  renderSessions();
+  renderChat();
+  closeDrawer();
+  $("#title").textContent = "新建会话…";
+  $("#send").disabled = true;
+  pendingNewSession = (async () => {
+    try {
+      const s = await api("/session", { method: "POST", body: JSON.stringify({}) });
+      state.sessions.unshift(s);
+      renderSessions();
+      if (state.current === pendId) {
+        state.msgs.delete(pendId);
+        state.msgs.set(s.id, []);
+        state.current = s.id;
+        localStorage.setItem("oc_session", s.id);
+        setTitle(s.id);
+        renderChat();
+        loadSessions({ force: true }).catch(() => {});
+      }
+    } catch (e) {
+      toast("创建会话失败: " + e.message);
+      if (state.current === pendId) {
+        state.msgs.delete(pendId);
+        state.msgEls = {};
+        state.current = prev;
+        if (prev) {
+          localStorage.setItem("oc_session", prev);
+          if (state.msgs.has(prev)) renderChat();
+          else { state.loading = true; renderChat(); loadHistory(prev).then(() => { if (state.current === prev) { state.loading = false; renderChat(); } }).catch(() => { state.loading = false; renderChat(); }); }
+        } else renderChat();
+      }
+    } finally {
+      pendingNewSession = null;
+      $("#send").disabled = false;
+    }
+  })();
+  return pendingNewSession;
+}
+async function deleteSession(id) {
+  await api("/session/" + id, { method: "DELETE" });
+  state.msgs.delete(id);
+  if (state.current === id) {
+    state.current = null; state.msgs = new Map(); state.msgEls = {};
+    state.running = false; updateRunningUI();
+    $("#title").textContent = "OpenCode"; renderChat();
+  }
+  state.sessions = state.sessions.filter(session => session.id !== id);
+  renderSessions();
+  await loadSessions({ force: true });
+}
+
+/* ---------- attachments ---------- */
+const MAX_TOTAL = 20 * 1024 * 1024;
+state.attachments = [];
+function fmtSize(n) {
+  if (n >= 1048576) return (n / 1048576).toFixed(1) + "MB";
+  if (n >= 1024) return (n / 1024).toFixed(0) + "KB";
+  return n + "B";
+}
+function renderAttachments() {
+  const box = $("#attach-list");
+  box.innerHTML = state.attachments.map((a, i) =>
+    `<div class="atchip"><span class="an">📄 ${esc(a.name)}</span><span class="as">${fmtSize(a.size)}</span><button class="ax" data-i="${i}">✕</button></div>`
+  ).join("");
+}
+$("#attach-btn").onclick = () => $("#file-input").click();
+$("#file-input").addEventListener("change", e => {
+  const files = Array.from(e.target.files || []);
+  e.target.value = "";
+  if (!files.length) return;
+  const total = state.attachments.reduce((s, a) => s + a.size, 0) + files.reduce((s, f) => s + f.size, 0);
+  if (total > MAX_TOTAL) { toast("附件总大小不能超过 20MB"); return; }
+  for (const f of files) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      state.attachments.push({
+        name: f.name, size: f.size,
+        mime: f.type || "application/octet-stream",
+        dataUrl: String(reader.result)
+      });
+      renderAttachments();
+    };
+    reader.onerror = () => toast("读取文件失败: " + f.name);
+    reader.readAsDataURL(f);
+  }
+});
+$("#attach-list").addEventListener("click", e => {
+  const btn = e.target.closest(".ax");
+  if (!btn) return;
+  state.attachments.splice(Number(btn.dataset.i), 1);
+  renderAttachments();
+});
+
+/* ---------- send / abort ---------- */
+async function send() {
+  const inp = $("#input");
+  const text = inp.value.trim();
+  if (!text || state.running) return;
+  try {
+    if (!state.current || String(state.current).startsWith("pending-")) await newSession();
+    const sid = state.current;
+    inp.value = "";
+    autoGrow();
+    state.running = true;
+    updateRunningUI();
+    if (!state.msgs.has(sid)) state.msgs.set(sid, []);
+    state.msgs.get(sid).push({ id: "pending-user", pending: true, info: { role: "user" }, parts: [{ id: "u", part: { type: "text", text } }] });
+    state.msgs.get(sid).push({ id: "pending-assistant", pending: true, info: { role: "assistant", model: state.model }, parts: [{ id: "p", part: { type: "text", text: "" } }] });
+    renderChat(); scrollBottom();
+    const parts = [
+      ...state.attachments.map(a => ({ type: "file", mime: a.mime, url: a.dataUrl, filename: a.name })),
+      { type: "text", text }
+    ];
+    state.attachments = [];
+    renderAttachments();
+    await api(`/session/${sid}/prompt_async`, {
+      method: "POST",
+      body: JSON.stringify({
+        parts,
+        model: state.model ? { providerID: state.model.providerID, modelID: state.model.modelID } : undefined,
+        agent: state.agent || undefined
+      })
+    });
+  } catch (e) {
+    toast("发送失败: " + e.message);
+    state.running = false;
+    updateRunningUI();
+    if (state.current) {
+      const arr = state.msgs.get(state.current) || [];
+      state.msgs.set(state.current, arr.filter(x => !x.pending));
+    }
+    renderChat();
+  }
+}
+async function abort() {
+  if (!state.current) return;
+  try { await api(`/session/${state.current}/abort`, { method: "POST" }); } catch (e) {}
+}
+function updateRunningUI() {
+  const btn = $("#send");
+  btn.classList.toggle("abort", state.running);
+  btn.textContent = state.running ? "■" : "➤";
+  $("#status-dot").classList.toggle("busy", state.running);
+}
+
+/* ---------- sse ---------- */
+function connectSSE() {
+  if (sseAbort) return;
+  if (!PWD) return;
+  sseAbort = new AbortController();
+  const token = sseAbort;
+  fetch(API + "/event", { headers: authHdr(), signal: token.signal })
+    .then(async res => {
+      if (!res.ok) { throw new Error("http " + res.status); }
+      sseRetry = 0;
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf("\n\n")) >= 0) {
+          const chunk = buf.slice(0, idx); buf = buf.slice(idx + 2);
+          handleSSE(chunk);
+        }
+      }
+    })
+    .catch(e => {
+      if (token !== sseAbort) return;
+      if (e && e.message === "http 401") { PWD = ""; localStorage.removeItem("oc_pwd"); showLogin(); }
+      else scheduleReconnect();
+    })
+    .finally(() => { sseAbort = null; });
+}
+function scheduleReconnect() {
+  if (sseTimer) return;
+  if (!state.running && !document.hidden) sseRetry = Math.min(sseRetry + 1, 10);
+  sseTimer = setTimeout(() => { sseTimer = null; connectSSE(); }, sseRetry ? Math.min(15000, 1000 * sseRetry) : 3000);
+}
+function handleSSE(chunk) {
+  const lines = chunk.split("\n").filter(l => l.startsWith("data:"));
+  for (const l of lines) {
+    let ev; try { ev = JSON.parse(l.slice(5)); } catch (e) { continue; }
+    const t = ev.type, pr = ev.properties || {};
+    if (t === "session.idle" || (t === "session.status" && pr.status && pr.status.type === "idle")) {
+      if (pr.sessionID === state.current && state.running) {
+        state.running = false; updateRunningUI();
+        loadHistory(state.current).then(() => { if (state.current === pr.sessionID) renderChat(); }).catch(() => {});
+        loadSessions({ force: true }).catch(() => {});
+      }
+    } else if (t === "session.status" && pr.status && pr.status.type === "busy" && pr.sessionID === state.current) {
+      state.running = true; updateRunningUI();
+    } else if (t === "message.part.delta") {
+      if (pr.sessionID !== state.current) return;
+      deltaPart(pr.sessionID, pr.messageID, pr.partID, pr.delta);
+      queueMsgRender(pr.messageID);
+    } else if (t === "message.part.updated") {
+      if (pr.sessionID !== state.current) return;
+      upsertPart(pr.sessionID, pr.messageID, pr.partID, pr.part);
+      queueMsgRender(pr.messageID);
+    } else if (t === "message.updated") {
+      if (pr.sessionID === state.current && pr.info) upsertMsg(pr.sessionID, pr.messageID, pr.info);
+    } else if (t === "session.error") {
+      if (pr.sessionID === state.current) {
+        state.running = false; updateRunningUI();
+        const msg = pr.error && pr.error.data ? pr.error.data.message : "请求失败";
+        toast("错误: " + msg);
+        loadHistory(state.current).then(renderChat).catch(() => {});
+      }
+    } else if (t === "session.updated") {
+      const s = pr.session;
+      if (s) {
+        const i = state.sessions.findIndex(x => x.id === s.id);
+        if (i >= 0) state.sessions[i] = s; else state.sessions.unshift(s);
+        state.sessions.sort((a, b) => (b.time?.updated || 0) - (a.time?.updated || 0));
+        renderSessions();
+        if (s.id === state.current) $("#title").textContent = s.title || "OpenCode";
+      }
+    }
+  }
+}
+
+/* ---------- model / agent ---------- */
+async function loadConfig() {
+  const cfg = await api("/config/providers");
+  state.providers = cfg.providers || [];
+  const sel = $("#model-select");
+  const groups = new Map();
+  for (const p of state.providers) {
+    for (const [mid, m] of Object.entries(p.models || {})) {
+      groups.set(p.id, groups.get(p.id) || []);
+      groups.get(p.id).push({ id: mid, name: m.name || mid, providerID: p.id });
+    }
+  }
+  sel.innerHTML = "";
+  for (const [pid, ms] of groups) {
+    const og = document.createElement("optgroup");
+    og.label = pid;
+    for (const m of ms) {
+      const o = document.createElement("option");
+      o.value = JSON.stringify({ providerID: pid, modelID: m.id });
+      o.textContent = m.name;
+      og.appendChild(o);
+    }
+    sel.appendChild(og);
+  }
+  const def = (cfg.default && cfg.default.opencode) ? { providerID: "opencode", modelID: cfg.default.opencode }
+    : (groups.size ? { providerID: groups.keys().next().value, modelID: Object.keys(state.providers.find(p => p.id === groups.keys().next().value).models)[0] } : null);
+  if (!state.model) state.model = def;
+  if (state.model) sel.value = JSON.stringify(state.model);
+  sel.onchange = () => {
+    state.model = JSON.parse(sel.value);
+    localStorage.setItem("oc_model", JSON.stringify(state.model));
+  };
+  const agents = await api("/agent");
+  state.agents = agents || [];
+  const asel = $("#agent-select");
+  asel.innerHTML = "";
+  for (const a of state.agents) {
+    const o = document.createElement("option");
+    o.value = a.name; o.textContent = a.name + (a.description ? " - " + a.description.split("\n")[0].slice(0, 20) : "");
+    asel.appendChild(o);
+  }
+  asel.value = state.agent;
+  asel.onchange = () => { state.agent = asel.value; localStorage.setItem("oc_agent", state.agent); };
+}
+async function boot() {
+  const sid = localStorage.getItem("oc_session");
+  try {
+    await Promise.all([loadSessions(), loadConfig()]);
+    if (sid && state.sessions.some(s => s.id === sid)) await switchSession(sid);
+    else { const s = state.sessions[0]; if (s) await switchSession(s.id); else renderChat(); }
+    connectSSE();
+  } catch (e) {
+    if (e.message === "401") return;
+    toast("连接失败: " + e.message);
+  }
+}
+
+/* ---------- login ---------- */
+function showLogin() {
+  $("#login").classList.remove("hidden");
+  $("#login-err").textContent = "";
+  setTimeout(() => $("#pwd").focus(), 50);
+}
+function doLogin() {
+  const pwd = $("#pwd").value.trim();
+  if (!pwd) return;
+  PWD = pwd;
+  localStorage.setItem("oc_pwd", pwd);
+  api("/global/health").then(() => {
+    $("#login").classList.add("hidden");
+    state.msgs = new Map();
+    state.sessions = [];
+    boot();
+  }).catch(e => {
+    if (e.message === "401") { PWD = ""; localStorage.removeItem("oc_pwd"); $("#login-err").textContent = "密码错误"; }
+    else $("#login-err").textContent = "无法连接服务器: " + e.message;
+  });
+}
+$("#login-btn").onclick = doLogin;
+$("#pwd").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+
+/* ---------- toast ---------- */
+let toastTimer = null;
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3500);
+}
+
+/* ---------- drawer ---------- */
+function openDrawer() { $("#drawer").classList.add("open"); $("#scrim").classList.add("open"); }
+function closeDrawer() { $("#drawer").classList.remove("open"); $("#scrim").classList.remove("open"); }
+$("#menu-btn").onclick = () => {
+  openDrawer();
+  renderSessions();
+  loadSessions({ force: true }).catch(e => toast("加载会话列表失败: " + e.message));
+};
+$("#close-drawer").onclick = closeDrawer;
+$("#scrim").onclick = closeDrawer;
+$("#load-older").onclick = loadOlderHistory;
+$("#session-list").addEventListener("click", e => {
+  const del = e.target.closest(".del");
+  if (del) { deleteSession(del.dataset.del).catch(err => toast("删除失败: " + err.message)); return; }
+  const item = e.target.closest(".sess-item");
+  if (item) switchSession(item.dataset.id);
+});
+$("#new-btn").onclick = newSession;
+$("#new-sess").onclick = newSession;
+$("#logout-btn").onclick = () => {
+  PWD = ""; localStorage.removeItem("oc_pwd");
+  if (sseAbort) { sseAbort.abort(); sseAbort = null; }
+  closeDrawer(); showLogin();
+};
+
+/* ---------- composer ---------- */
+const inp = $("#input");
+function autoGrow() { inp.style.height = "auto"; inp.style.height = Math.min(inp.scrollHeight, 120) + "px"; }
+inp.addEventListener("input", autoGrow);
+inp.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+});
+$("#send").onclick = () => { if (state.running) abort(); else send(); };
+
+/* ---------- delegation ---------- */
+$("#msgs").addEventListener("click", e => {
+  const copy = e.target.closest(".copy");
+  if (copy) {
+    navigator.clipboard.writeText(copy.dataset.c).then(() => { copy.textContent = "已复制"; setTimeout(() => copy.textContent = "复制", 1200); });
+    return;
+  }
+  const head = e.target.closest(".toolhead");
+  if (head) head.parentElement.classList.toggle("open");
+  const rs = e.target.closest(".reasoning");
+  if (rs) rs.classList.toggle("expanded");
+});
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && !sseAbort && PWD) connectSSE();
+});
+
+/* ---------- init ---------- */
+if (PWD) boot(); else showLogin();
+</script>
+</body>
+</html>

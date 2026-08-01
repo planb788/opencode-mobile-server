@@ -1,0 +1,16 @@
+{
+  "name": "OpenCode Mobile",
+  "short_name": "OpenCode",
+  "start_url": "/opencode/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/opencode/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

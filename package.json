@@ -1,0 +1,14 @@
+{
+  "name": "opencode-mobile-server",
+  "version": "1.0.0",
+  "description": "A self-hosted mobile web client and deployment gateway for the OpenCode ecosystem.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "start:lan": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
