@@ -73,6 +73,25 @@ header select {
   border-radius: 8px; padding: 5px 6px; font-size: 12px; max-width: 110px;
   appearance: none; cursor: pointer;
 }
+header select#variant-select { max-width: 96px; }
+/* ---------- context bar ---------- */
+#ctx {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 14px; border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+#ctx[hidden] { display: none; }
+#ctx-bar {
+  flex: 1; min-width: 0; height: 5px; border-radius: 3px;
+  background: var(--bg2); border: 1px solid var(--border); overflow: hidden;
+}
+#ctx-fill {
+  height: 100%; width: 0; border-radius: 3px;
+  background: var(--accent); transition: width .35s ease;
+}
+#ctx.warn #ctx-fill { background: var(--busy); }
+#ctx.danger #ctx-fill { background: var(--err); }
+#ctx-label { font-size: 11px; color: var(--muted); white-space: nowrap; flex: none; }
 /* ---------- messages ---------- */
 #msgs {
   flex: 1; overflow-y: auto; padding: 14px 14px 8px;
@@ -129,6 +148,8 @@ header select {
 }
 .reasoning.expanded { max-height: none; }
 .reasoning .hint { cursor: pointer; user-select: none; }
+.stream-plain { white-space: pre-wrap; word-break: break-word; }
+.reasoning.streaming::after { content: "▋"; color: var(--accent); animation: blink 1s steps(1) infinite; }
 .toolcard {
   background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
   margin: 6px 0; font-size: 13px; overflow: hidden;
@@ -253,6 +274,90 @@ header select {
   z-index: 40; max-width: 86vw; text-align: center;
 }
 #toast.show { opacity: 1; transform: translateX(-50%); }
+/* ---------- api keys panel ---------- */
+#keys {
+  position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,.6);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+#keys.hidden { display: none; }
+#keys .k-card {
+  width: 100%; max-width: 560px; max-height: 84dvh; background: var(--bg2);
+  border: 1px solid var(--border); border-top-left-radius: 16px; border-top-right-radius: 16px;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+#keys .k-head { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+#keys .k-head .k-title { flex: 1; font-size: 15px; font-weight: 700; }
+#keys-body { flex: 1; overflow-y: auto; padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); }
+.k-provider { margin-bottom: 16px; }
+.k-pname { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.k-pid { font-weight: 400; color: var(--muted); font-size: 11px; }
+.k-row { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; font-size: 13px; }
+.k-row .k-label { color: var(--text); flex: none; max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.k-row .k-mask { font-family: ui-monospace, Menlo, monospace; color: var(--muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.k-active { background: var(--accent-dim); color: var(--accent); font-size: 11px; border-radius: 8px; padding: 1px 7px; flex: none; }
+.k-act { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 7px; padding: 4px 9px; font-size: 12px; cursor: pointer; flex: none; }
+.k-act:active { color: var(--accent); border-color: var(--accent-dim); }
+.k-act.danger:active { color: var(--err); border-color: #7f1d1d; }
+.k-add { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-top: 6px; }
+.k-add .k-row2 { display: flex; gap: 8px; }
+.k-add input, .k-add select {
+  width: 100%; background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 9px 11px; font-size: 14px; outline: none; margin-bottom: 8px;
+}
+.k-add .k-keyrow { display: flex; gap: 6px; }
+.k-add .k-keyrow input { flex: 1; }
+.k-add .k-keyrow button {
+  flex: none; background: var(--bg2); border: 1px solid var(--border); color: var(--muted);
+  border-radius: 8px; padding: 0 12px; font-size: 13px; cursor: pointer; margin-bottom: 8px;
+}
+.k-add button.k-save {
+  width: 100%; background: var(--accent); color: #04211d; border: none;
+  font-size: 14px; font-weight: 700; border-radius: 9px; padding: 10px; cursor: pointer;
+}
+.k-add button.k-save:disabled { opacity: .5; }
+.k-hint { font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+.k-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 18px 10px; }
+/* ---------- question (AI 提问) ---------- */
+#question {
+  position: fixed; inset: 0; z-index: 26; background: rgba(0,0,0,.6);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+#question.hidden { display: none; }
+#question .q-card {
+  width: 100%; max-width: 560px; max-height: 86dvh; background: var(--bg2);
+  border: 1px solid var(--border); border-top-left-radius: 16px; border-top-right-radius: 16px;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+#question .q-head { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+#question .q-head .q-title { flex: 1; font-size: 15px; font-weight: 700; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#question .q-head .q-sub { font-size: 11px; color: var(--muted); font-weight: 400; flex: none; }
+#question-body { flex: 1; overflow-y: auto; padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); }
+.q-item { margin-bottom: 18px; }
+.q-item:last-child { margin-bottom: 4px; }
+.q-header { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+.q-text { font-size: 14.5px; font-weight: 600; margin-bottom: 10px; white-space: pre-wrap; word-break: break-word; }
+.q-options { display: flex; flex-direction: column; gap: 8px; }
+.q-opt {
+  display: block; text-align: left; width: 100%;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 9px 12px; cursor: pointer; color: var(--text);
+}
+.q-opt .q-ol { font-size: 13.5px; font-weight: 600; display: block; }
+.q-opt .q-od { font-size: 12px; color: var(--muted); display: block; margin-top: 2px; }
+.q-opt.on { background: var(--accent-dim); border-color: var(--accent); }
+.q-opt.on .q-ol { color: var(--accent); }
+.q-custom {
+  width: 100%; background: var(--panel); border: 1px solid var(--border); color: var(--text);
+  border-radius: 10px; padding: 10px 12px; font-size: 14px; outline: none; margin-top: 8px;
+}
+.q-custom:focus { border-color: var(--accent-dim); }
+.q-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.q-noopt { color: var(--muted); font-size: 12px; }
+#question .q-foot { display: flex; gap: 10px; padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
+#question .q-foot button { flex: 1; border-radius: 10px; padding: 11px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; }
+#q-send { background: var(--accent); color: #04211d; }
+#q-send:disabled { background: var(--panel); color: var(--muted); }
+#q-skip { background: var(--panel); color: var(--muted); border: 1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -262,9 +367,14 @@ header select {
     <div id="title">OpenCode</div>
     <select id="model-select" title="模型"></select>
     <select id="agent-select" title="Agent"></select>
+    <select id="variant-select" title="思考强度" hidden></select>
     <button class="btn" id="new-btn" title="新会话">✚</button>
     <span id="status-dot"></span>
   </header>
+  <div id="ctx" hidden>
+    <div id="ctx-bar"><div id="ctx-fill"></div></div>
+    <span id="ctx-label"></span>
+  </div>
   <div id="msgs">
     <div id="history-top" hidden>
       <button id="load-older" type="button">加载更早消息</button>
@@ -296,9 +406,20 @@ header select {
   <div id="session-list"></div>
   <footer>
     <button class="new" id="new-sess">✚ 新会话</button>
-    <button id="logout-btn">退出登录</button>
+    <button id="keys-btn">🔑 密钥</button>
+    <button id="logout-btn">退出</button>
   </footer>
 </aside>
+
+<div id="keys" class="hidden">
+  <div class="k-card">
+    <div class="k-head">
+      <span class="k-title">API 密钥</span>
+      <button class="btn" id="keys-close">✕</button>
+    </div>
+    <div id="keys-body"></div>
+  </div>
+</div>
 
 <div id="login" class="hidden">
   <div class="card">
@@ -308,6 +429,21 @@ header select {
     <input type="password" id="pwd" placeholder="访问密码" autocomplete="current-password" />
     <button id="login-btn">连接</button>
     <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<div id="question" class="hidden">
+  <div class="q-card">
+    <div class="q-head">
+      <span class="q-title">🤔 AI 需要你的回答</span>
+      <span class="q-sub" id="q-sub"></span>
+      <button class="btn" id="q-close" title="跳过">✕</button>
+    </div>
+    <div id="question-body"></div>
+    <div class="q-foot">
+      <button id="q-skip">跳过</button>
+      <button id="q-send">发送回答</button>
+    </div>
   </div>
 </div>
 
@@ -325,14 +461,18 @@ let historyRequestId = 0;
 const HISTORY_PAGE_SIZE = 40;
 const state = {
   sessions: [], current: null, running: false,
-  providers: [], models: [], agents: [],
+  providers: [], models: [], modelMeta: new Map(), agents: [],
   model: JSON.parse(localStorage.getItem("oc_model") || "null"),
+  variant: null,
   agent: localStorage.getItem("oc_agent") || "build",
   msgs: new Map(), // sid -> [{id, info, parts}]
   history: new Map(), // sid -> { before, hasMore, loading }
   msgEls: {},      // mid -> DOM element
   loading: false,
-  sessionsLoading: false
+  sessionsLoading: false,
+  questions: new Map(), // requestID -> question request (待回答)
+  question: null,       // 当前展示的问题 requestID
+  retryShown: null      // 当前已提示的 retry 事件 id（去重）
 };
 
 /* ---------- api ---------- */
@@ -404,10 +544,16 @@ function md(text) {
 /* ---------- render: message parts ---------- */
 function renderPart(p, streaming) {
   switch (p.type) {
-    case "text":
-      return `<div class="text${streaming ? " cursor-blink" : ""}"><div class="md">${md(p.text || "")}</div></div>`;
-    case "reasoning":
-      return `<div class="reasoning"><span class="hint">🧠 思考中… ▾</span>${p.text ? md(p.text) : ""}</div>`;
+    case "text": {
+      // Markdown parsing on every token is needlessly expensive on mobile.
+      // Keep the live part as plain escaped text and format it once it settles.
+      const body = streaming ? `<div class="stream-plain">${esc(p.text || "")}</div>` : `<div class="md">${md(p.text || "")}</div>`;
+      return `<div class="text${streaming ? " cursor-blink" : ""}">${body}</div>`;
+    }
+    case "reasoning": {
+      const body = p.text ? (streaming ? `<div class="stream-plain">${esc(p.text)}</div>` : md(p.text)) : "";
+      return `<div class="reasoning${streaming ? " streaming" : ""}"><span class="hint">${streaming ? "🧠 思考中… ▾" : "🧠 思考过程 ▾"}</span>${body}</div>`;
+    }
     case "tool": {
       const st = p.state || {};
       const status = st.status || "running";
@@ -451,6 +597,48 @@ function renderMessage(entry, streaming) {
   return `<div class="msg assistant" data-mid="${entry.id}"><div class="role">${esc(model)}</div><div class="bubble"><div class="parts">${html}</div></div></div>`;
 }
 
+/* ---------- context usage ---------- */
+function fmtTokens(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+  if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+  return String(n);
+}
+function contextLimit() {
+  const s = state.sessions.find(x => x.id === state.current);
+  const m = s && s.model;
+  if (!m) return null;
+  const p = state.providers.find(x => x.id === m.providerID);
+  const mm = p && p.models && p.models[m.modelID !== undefined ? m.modelID : m.id];
+  return (mm && mm.limit && mm.limit.context) || null;
+}
+function contextUsed() {
+  const arr = state.msgs.get(state.current);
+  if (!arr) return 0;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const t = arr[i].info && arr[i].info.tokens;
+    if (t && typeof t.input === "number") {
+      const read = (t.cache && typeof t.cache.read === "number") ? t.cache.read : 0;
+      const used = t.input + read;
+      if (used > 0) return used;
+    }
+  }
+  return 0;
+}
+function updateContextBar() {
+  const el = $("#ctx");
+  if (!state.current || String(state.current).startsWith("pending-")) { el.hidden = true; return; }
+  const limit = contextLimit();
+  if (!limit) { el.hidden = true; return; }
+  const used = contextUsed();
+  const pct = Math.min(100, used / limit * 100);
+  $("#ctx-fill").style.width = pct.toFixed(2) + "%";
+  el.classList.toggle("warn", pct >= 70);
+  el.classList.toggle("danger", pct >= 90);
+  $("#ctx-label").textContent = `${fmtTokens(used)} / ${fmtTokens(limit)} · ${pct.toFixed(1)}%`;
+  el.title = `上下文使用 ${used.toLocaleString()} / ${limit.toLocaleString()} tokens (${pct.toFixed(1)}%)`;
+  el.hidden = false;
+}
+
 /* ---------- render: whole chat ---------- */
 function findMsgEntry(sid, mid) {
   const s = state.msgs.get(sid);
@@ -475,10 +663,11 @@ function upsertPart(sid, mid, pid, part) {
   if (i < 0) { e.parts.push({ id: pid, part }); }
   else {
     const prev = e.parts[i].part;
-    e.parts[i].part = part ? { ...part, text: part.text ?? prev.text, state: part.state ?? prev.state } : e.parts[i].part;
+    e.parts[i].part = part ? { ...prev, ...part, text: part.text ?? prev.text, state: part.state ?? prev.state } : e.parts[i].part;
   }
 }
-function deltaPart(sid, mid, pid, delta) {
+function deltaPart(sid, mid, pid, delta, field = "text") {
+  if (field !== "text") return;
   let e = findMsgEntry(sid, mid);
   if (!e) e = upsertMsg(sid, mid, null);
   let i = e.parts.findIndex(p => p.id === pid);
@@ -487,6 +676,7 @@ function deltaPart(sid, mid, pid, delta) {
   else if (delta && typeof delta.text === "string") e.parts[i].part.text = (e.parts[i].part.text || "") + delta.text;
 }
 function renderChat() {
+  updateContextBar();
   const box = $("#msgs");
   const list = $("#message-list");
   const empty = $("#empty");
@@ -616,6 +806,8 @@ async function switchSession(id) {
   state.current = id;
   state.running = false;
   updateRunningUI();
+  const curQ = currentQuestion();
+  if (curQ && curQ.sessionID !== id) closeQuestion();
   localStorage.setItem("oc_session", id);
   state.msgEls = {};
   renderSessions();
@@ -624,6 +816,8 @@ async function switchSession(id) {
   if (state.msgs.has(id)) {
     state.loading = false;
     renderChat();
+    checkPendingQuestions();
+    syncSessionStatus();
     if (historyAbort === controller) historyAbort = null;
     return;
   }
@@ -639,6 +833,8 @@ async function switchSession(id) {
     renderChat();
   }
   if (historyAbort === controller) historyAbort = null;
+  checkPendingQuestions();
+  syncSessionStatus();
 }
 async function loadHistory(sid, { before = null, signal } = {}) {
   const meta = historyMeta(sid);
@@ -809,6 +1005,8 @@ async function send() {
   const inp = $("#input");
   const text = inp.value.trim();
   if (!text || state.running) return;
+  closeQuestion();
+  state.retryShown = null;
   try {
     if (!state.current || String(state.current).startsWith("pending-")) await newSession();
     const sid = state.current;
@@ -831,7 +1029,8 @@ async function send() {
       body: JSON.stringify({
         parts,
         model: state.model ? { providerID: state.model.providerID, modelID: state.model.modelID } : undefined,
-        agent: state.agent || undefined
+        agent: state.agent || undefined,
+        variant: state.variant || undefined
       })
     });
   } catch (e) {
@@ -856,27 +1055,172 @@ function updateRunningUI() {
   $("#status-dot").classList.toggle("busy", state.running);
 }
 
+/* ---------- question (AI 提问) ---------- */
+function currentQuestion() {
+  return state.question ? state.questions.get(state.question) || null : null;
+}
+function closeQuestion() {
+  state.question = null;
+  $("#question").classList.add("hidden");
+}
+function showQuestion(req) {
+  if (!req || req.sessionID !== state.current) return;
+  state.question = req.id;
+  renderQuestion(req);
+  $("#question").classList.remove("hidden");
+}
+function renderQuestion(req) {
+  const box = $("#question-body");
+  box.innerHTML = req.questions.map((q, qi) => {
+    const opts = (q.options && q.options.length)
+      ? `<div class="q-options">${q.options.map((o, oi) => `
+          <button type="button" class="q-opt" data-qi="${qi}" data-label="${esc(o.label)}"${q.multiple ? ' data-multi="1"' : ""}>
+            <span class="q-ol">${esc(o.label)}</span>
+            ${o.description ? `<span class="q-od">${esc(o.description)}</span>` : ""}
+          </button>`).join("")}</div>`
+      : `<div class="q-noopt">该问题未提供选项，请在下方输入回答。</div>`;
+    return `
+      <div class="q-item">
+        ${q.header ? `<div class="q-header">${esc(q.header)}</div>` : ""}
+        <div class="q-text">${esc(q.question || "请回答")}</div>
+        ${opts}
+        ${q.custom !== false ? `<input class="q-custom" data-qi="${qi}" placeholder="自定义输入（如有输入则以输入内容为答案）" />` : ""}
+        ${q.multiple ? `<div class="q-hint">可多选</div>` : ""}
+      </div>`;
+  }).join("");
+  $("#q-sub").textContent = req.questions.length > 1 ? `${req.questions.length} 个问题` : "";
+  const send = $("#q-send");
+  send.disabled = false;
+  send.textContent = "发送回答";
+  box.querySelectorAll(".q-opt").forEach(b => {
+    b.onclick = () => {
+      const multi = b.dataset.multi === "1";
+      if (multi) b.classList.toggle("on");
+      else {
+        box.querySelectorAll(`.q-opt[data-qi="${b.dataset.qi}"]`).forEach(x => x.classList.toggle("on", x === b));
+      }
+      const custom = box.querySelector(`.q-custom[data-qi="${b.dataset.qi}"]`);
+      if (custom) custom.value = "";
+    };
+  });
+  box.querySelectorAll(".q-custom").forEach(c => {
+    c.addEventListener("input", () => {
+      if (c.value.trim()) {
+        box.querySelectorAll(`.q-opt[data-qi="${c.dataset.qi}"]`).forEach(x => x.classList.remove("on"));
+      }
+    });
+    c.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); submitQuestion(); }
+    });
+  });
+}
+function collectAnswers(req) {
+  const box = $("#question-body");
+  return req.questions.map((q, qi) => {
+    const custom = box.querySelector(`.q-custom[data-qi="${qi}"]`);
+    if (custom && custom.value.trim()) return [custom.value.trim()];
+    return Array.from(box.querySelectorAll(`.q-opt[data-qi="${qi}"].on`)).map(b => b.dataset.label);
+  });
+}
+async function submitQuestion() {
+  const req = currentQuestion();
+  if (!req) return;
+  const answers = collectAnswers(req);
+  const send = $("#q-send");
+  send.disabled = true;
+  send.textContent = "发送中…";
+  try {
+    await api(`/question/${encodeURIComponent(req.id)}/reply`, {
+      method: "POST",
+      body: JSON.stringify({ answers })
+    });
+    state.questions.delete(req.id);
+    closeQuestion();
+  } catch (e) {
+    toast("回答发送失败: " + e.message);
+    send.disabled = false;
+    send.textContent = "发送回答";
+  }
+}
+async function skipQuestion() {
+  const req = currentQuestion();
+  if (!req) return;
+  const skip = $("#q-skip");
+  skip.disabled = true;
+  try {
+    await api(`/question/${encodeURIComponent(req.id)}/reject`, { method: "POST" });
+    state.questions.delete(req.id);
+    closeQuestion();
+  } catch (e) {
+    toast("操作失败: " + e.message);
+    skip.disabled = false;
+  }
+}
+async function checkPendingQuestions() {
+  const sid = state.current;
+  if (!sid || String(sid).startsWith("pending-")) return;
+  try {
+    const list = await api("/question");
+    if (Array.isArray(list)) for (const q of list) state.questions.set(q.id, q);
+  } catch (e) {}
+  if (state.question) return;
+  const cur = Array.from(state.questions.values())
+    .filter(x => x.sessionID === state.current)
+    .sort((a, b) => (b.id || "").localeCompare(a.id || ""))[0];
+  if (cur) {
+    state.running = true;
+    updateRunningUI();
+    showQuestion(cur);
+  }
+}
+$("#q-send").onclick = submitQuestion;
+$("#q-skip").onclick = skipQuestion;
+$("#q-close").onclick = skipQuestion;
+
 /* ---------- sse ---------- */
+function handleSSEBlock(block) {
+  const data = [];
+  for (const line of block.split(/\r\n|\n|\r/)) {
+    if (!line || line.startsWith(":")) continue;
+    const colon = line.indexOf(":");
+    const field = colon < 0 ? line : line.slice(0, colon);
+    if (field !== "data") continue;
+    let value = colon < 0 ? "" : line.slice(colon + 1);
+    if (value.startsWith(" ")) value = value.slice(1);
+    data.push(value);
+  }
+  if (data.length) handleSSE(data.join("\n"));
+}
 function connectSSE() {
   if (sseAbort) return;
   if (!PWD) return;
   sseAbort = new AbortController();
   const token = sseAbort;
-  fetch(API + "/event", { headers: authHdr(), signal: token.signal })
+  fetch(API + "/event", {
+    headers: { ...authHdr(), "Accept": "text/event-stream", "Cache-Control": "no-cache" },
+    signal: token.signal
+  })
     .then(async res => {
       if (!res.ok) { throw new Error("http " + res.status); }
       sseRetry = 0;
+      checkPendingQuestions();
+      if (!res.body) throw new Error("SSE response has no body");
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let buf = "";
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          buf += dec.decode();
+          if (buf.trim()) handleSSEBlock(buf);
+          break;
+        }
         buf += dec.decode(value, { stream: true });
-        let idx;
-        while ((idx = buf.indexOf("\n\n")) >= 0) {
-          const chunk = buf.slice(0, idx); buf = buf.slice(idx + 2);
-          handleSSE(chunk);
+        let separator;
+        while ((separator = buf.match(/\r\n\r\n|\n\n|\r\r/))) {
+          const chunk = buf.slice(0, separator.index);
+          buf = buf.slice(separator.index + separator[0].length);
+          handleSSEBlock(chunk);
         }
       }
     })
@@ -892,10 +1236,9 @@ function scheduleReconnect() {
   if (!state.running && !document.hidden) sseRetry = Math.min(sseRetry + 1, 10);
   sseTimer = setTimeout(() => { sseTimer = null; connectSSE(); }, sseRetry ? Math.min(15000, 1000 * sseRetry) : 3000);
 }
-function handleSSE(chunk) {
-  const lines = chunk.split("\n").filter(l => l.startsWith("data:"));
-  for (const l of lines) {
-    let ev; try { ev = JSON.parse(l.slice(5)); } catch (e) { continue; }
+function handleSSE(data) {
+  let ev;
+  try { ev = JSON.parse(data); } catch (e) { return; }
     const t = ev.type, pr = ev.properties || {};
     if (t === "session.idle" || (t === "session.status" && pr.status && pr.status.type === "idle")) {
       if (pr.sessionID === state.current && state.running) {
@@ -905,16 +1248,38 @@ function handleSSE(chunk) {
       }
     } else if (t === "session.status" && pr.status && pr.status.type === "busy" && pr.sessionID === state.current) {
       state.running = true; updateRunningUI();
+    } else if (t === "session.status" && pr.status && pr.status.type === "retry" && pr.sessionID === state.current) {
+      state.running = true; updateRunningUI();
+      if (!state.retryShown) {
+        state.retryShown = pr.status.id;
+        const msg = (pr.status.message || "请求重试中…").slice(0, 160);
+        toast("⚠ " + msg);
+      }
     } else if (t === "message.part.delta") {
-      if (pr.sessionID !== state.current) return;
-      deltaPart(pr.sessionID, pr.messageID, pr.partID, pr.delta);
-      queueMsgRender(pr.messageID);
+      const sid = pr.sessionID || pr.part?.sessionID;
+      const mid = pr.messageID || pr.part?.messageID;
+      const pid = pr.partID || pr.part?.id;
+      if (sid !== state.current || !mid || !pid) return;
+      deltaPart(sid, mid, pid, pr.delta, pr.field);
+      queueMsgRender(mid);
     } else if (t === "message.part.updated") {
-      if (pr.sessionID !== state.current) return;
-      upsertPart(pr.sessionID, pr.messageID, pr.partID, pr.part);
-      queueMsgRender(pr.messageID);
+      const sid = pr.sessionID || pr.part?.sessionID;
+      const mid = pr.messageID || pr.part?.messageID;
+      if (sid !== state.current || !mid) return;
+      const part = pr.part || (pr.partID ? { id: pr.partID, type: "text", text: "" } : null);
+      const pid = pr.partID || part?.id;
+      if (part && pid) upsertPart(sid, mid, pid, part);
+      if (!pr.part && pr.delta && pid) deltaPart(sid, mid, pid, pr.delta, pr.field);
+      queueMsgRender(mid);
     } else if (t === "message.updated") {
-      if (pr.sessionID === state.current && pr.info) upsertMsg(pr.sessionID, pr.messageID, pr.info);
+      const info = pr.info;
+      const sid = pr.sessionID || info?.sessionID;
+      const mid = pr.messageID || info?.id;
+      if (sid === state.current && info && mid) {
+        upsertMsg(sid, mid, info);
+        updateContextBar();
+        queueMsgRender(mid);
+      }
     } else if (t === "session.error") {
       if (pr.sessionID === state.current) {
         state.running = false; updateRunningUI();
@@ -922,17 +1287,109 @@ function handleSSE(chunk) {
         toast("错误: " + msg);
         loadHistory(state.current).then(renderChat).catch(() => {});
       }
+    } else if (t === "question.asked") {
+      if (pr.id) state.questions.set(pr.id, pr);
+      if (pr.sessionID === state.current) {
+        state.running = true;
+        updateRunningUI();
+        showQuestion(pr);
+      }
+    } else if (t === "question.replied" || t === "question.rejected") {
+      state.questions.delete(pr.requestID);
+      if (state.question === pr.requestID) closeQuestion();
     } else if (t === "session.updated") {
-      const s = pr.session;
+      const s = pr.session || pr.info;
       if (s) {
         const i = state.sessions.findIndex(x => x.id === s.id);
         if (i >= 0) state.sessions[i] = s; else state.sessions.unshift(s);
         state.sessions.sort((a, b) => (b.time?.updated || 0) - (a.time?.updated || 0));
         renderSessions();
-        if (s.id === state.current) $("#title").textContent = s.title || "OpenCode";
+        if (s.id === state.current) {
+          $("#title").textContent = s.title || "OpenCode";
+          updateContextBar();
+        }
       }
     }
   }
+
+/* ---------- sync (实时兜底轮询，SSE 失效时也能看到进度) ---------- */
+let syncTimer = null;
+let msgSyncInFlight = false;
+function partScore(parts) {
+  let s = 0;
+  for (const p of parts) {
+    const t = p.part && p.part.text;
+    s += (typeof t === "string" ? t.length : 0) + 1;
+  }
+  return s;
+}
+function mergeSessionMsgs(sid, fresh) {
+  const cur = state.msgs.get(sid) || [];
+  const placeholders = cur.filter(e => e.pending);
+  const prevById = new Map(cur.filter(e => !e.pending).map(e => [e.id, e]));
+  let changed = false;
+  for (const fe of fresh) {
+    const prev = prevById.get(fe.id);
+    if (!prev) { prevById.set(fe.id, fe); changed = true; }
+    else if (partScore(fe.parts) > partScore(prev.parts)) { prevById.set(fe.id, fe); changed = true; }
+    else if (JSON.stringify(fe.info) !== JSON.stringify(prev.info)) { prev.info = fe.info; changed = true; }
+  }
+  if (!changed) return false;
+  const out = cur.filter(e => !e.pending).map(e => prevById.get(e.id) || e);
+  const seen = new Set(out.map(e => e.id));
+  for (const fe of fresh) if (!seen.has(fe.id)) { out.push(fe); seen.add(fe.id); }
+  if (state.running) {
+    for (const p of placeholders) if (!seen.has(p.id) && !out.some(e => e.info.role === p.info.role)) out.push(p);
+  }
+  state.msgs.set(sid, out);
+  return true;
+}
+async function syncSessionMessages() {
+  const sid = state.current;
+  if (!sid || String(sid).startsWith("pending-") || document.hidden) return;
+  if (msgSyncInFlight) return;
+  msgSyncInFlight = true;
+  try {
+    const result = await api(`/session/${encodeURIComponent(sid)}/message?limit=12`, { withMeta: true });
+    const msgs = result.data || [];
+    const fresh = (msgs || []).filter(m => m && m.info && m.info.id).map(m => ({
+      id: m.info.id,
+      info: m.info,
+      parts: (m.parts || []).map(p => ({ id: p.id, part: p }))
+    }));
+    if (!fresh.length) return;
+    if (mergeSessionMsgs(sid, fresh)) renderChat();
+  } catch (e) {} finally {
+    msgSyncInFlight = false;
+  }
+}
+async function syncSessionStatus() {
+  const sid = state.current;
+  if (!sid || String(sid).startsWith("pending-")) return;
+  try {
+    const map = await api("/session/status");
+    const st = map && map[sid];
+    const busy = Boolean(st && (st.type === "busy" || st.type === "retry"));
+    if (busy && !state.running) {
+      state.running = true; updateRunningUI();
+    } else if (!busy && state.running) {
+      state.running = false; updateRunningUI();
+      loadHistory(sid).then(() => { if (state.current === sid) renderChat(); }).catch(() => {});
+      loadSessions({ force: true }).catch(() => {});
+    }
+  } catch (e) {}
+}
+function runSync() {
+  syncSessionStatus();
+  syncSessionMessages();
+}
+function startSyncLoop() {
+  if (syncTimer) return;
+  const tick = () => {
+    if (!document.hidden) runSync();
+    syncTimer = setTimeout(tick, state.running ? 2000 : 8000);
+  };
+  tick();
 }
 
 /* ---------- model / agent ---------- */
@@ -941,10 +1398,13 @@ async function loadConfig() {
   state.providers = cfg.providers || [];
   const sel = $("#model-select");
   const groups = new Map();
+  state.modelMeta = new Map();
   for (const p of state.providers) {
     for (const [mid, m] of Object.entries(p.models || {})) {
       groups.set(p.id, groups.get(p.id) || []);
-      groups.get(p.id).push({ id: mid, name: m.name || mid, providerID: p.id });
+      const model = { id: mid, name: m.name || mid, providerID: p.id, reasoning: Boolean(m.reasoning || m.capabilities?.reasoning), variants: m.variants || {} };
+      groups.get(p.id).push(model);
+      state.modelMeta.set(`${p.id}/${mid}`, model);
     }
   }
   sel.innerHTML = "";
@@ -963,9 +1423,12 @@ async function loadConfig() {
     : (groups.size ? { providerID: groups.keys().next().value, modelID: Object.keys(state.providers.find(p => p.id === groups.keys().next().value).models)[0] } : null);
   if (!state.model) state.model = def;
   if (state.model) sel.value = JSON.stringify(state.model);
+  renderVariantSelect();
   sel.onchange = () => {
     state.model = JSON.parse(sel.value);
     localStorage.setItem("oc_model", JSON.stringify(state.model));
+    state.variant = null;
+    renderVariantSelect();
   };
   const agents = await api("/agent");
   state.agents = agents || [];
@@ -979,6 +1442,27 @@ async function loadConfig() {
   asel.value = state.agent;
   asel.onchange = () => { state.agent = asel.value; localStorage.setItem("oc_agent", state.agent); };
 }
+function variantStore() {
+  try { return JSON.parse(localStorage.getItem("oc_variants") || "{}"); } catch { return {}; }
+}
+function renderVariantSelect() {
+  const sel = $("#variant-select");
+  const key = state.model && `${state.model.providerID}/${state.model.modelID}`;
+  const meta = key && state.modelMeta.get(key);
+  const configured = meta ? Object.keys(meta.variants || {}) : [];
+  const options = configured.length ? configured : (meta && meta.reasoning ? ["default", "none", "minimal", "low", "medium", "high", "max", "xhigh"] : []);
+  sel.hidden = options.length === 0;
+  if (!options.length) { state.variant = null; sel.innerHTML = ""; return; }
+  const saved = variantStore()[key] || "default";
+  state.variant = options.includes(saved) ? saved : options[0];
+  sel.innerHTML = options.map(v => `<option value="${esc(v)}">${esc(v === "default" ? "默认思考" : "思考 " + v)}</option>`).join("");
+  sel.value = state.variant;
+  sel.onchange = () => {
+    state.variant = sel.value;
+    const store = variantStore(); store[key] = state.variant;
+    localStorage.setItem("oc_variants", JSON.stringify(store));
+  };
+}
 async function boot() {
   const sid = localStorage.getItem("oc_session");
   try {
@@ -986,6 +1470,8 @@ async function boot() {
     if (sid && state.sessions.some(s => s.id === sid)) await switchSession(sid);
     else { const s = state.sessions[0]; if (s) await switchSession(s.id); else renderChat(); }
     connectSSE();
+    startSyncLoop();
+    setTimeout(runSync, 800);
   } catch (e) {
     if (e.message === "401") return;
     toast("连接失败: " + e.message);
@@ -1015,6 +1501,121 @@ function doLogin() {
 }
 $("#login-btn").onclick = doLogin;
 $("#pwd").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+
+/* ---------- api keys ---------- */
+let keysData = null;
+async function loadKeys() {
+  keysData = await api("/auth-keys");
+  renderKeys();
+}
+function providerName(id) {
+  const p = state.providers.find(x => x.id === id);
+  return (p && p.name) ? p.name : id;
+}
+function addFormHTML() {
+  const opts = state.providers.length
+    ? state.providers.map(p => `<option value="${esc(p.id)}">${esc(p.name || p.id)}</option>`).join("")
+    : `<option value="opencode-go">opencode-go</option>`;
+  const canRestart = Boolean(keysData && keysData.restartable);
+  return `<div class="k-add">
+    <div class="k-row2">
+      <select id="k-provider" style="flex:1">${opts}</select>
+      <input id="k-label" placeholder="备注（可选）" style="flex:1" />
+    </div>
+    <div class="k-keyrow">
+      <input id="k-key" type="password" placeholder="新的 API 密钥" autocomplete="off" />
+      <button id="k-toggle" type="button" title="显示/隐藏">👁</button>
+    </div>
+    <button class="k-save" id="k-save">保存并切换</button>
+    <div class="k-hint">保存后会写入 OpenCode 的 auth 文件并${canRestart ? "自动重启 OpenCode 服务，连接会短暂中断" : "需手动重启 OpenCode 服务"}。若在服务器终端直接运行 opencode，也请重启该会话。</div>
+  </div>`;
+}
+function renderKeys() {
+  const box = $("#keys-body");
+  if (!keysData || !keysData.providers.length) {
+    box.innerHTML = `<div class="k-empty">暂无已保存的密钥</div>` + addFormHTML();
+    bindAddForm();
+    return;
+  }
+  box.innerHTML = keysData.providers.map(p => `
+    <div class="k-provider">
+      <div class="k-pname">${esc(providerName(p.id))}<span class="k-pid">${esc(p.id)}</span></div>
+      ${p.keys.map(k => `
+        <div class="k-row">
+          ${k.label ? `<span class="k-label">${esc(k.label)}</span>` : ""}
+          <span class="k-mask">${esc(k.masked)}</span>
+          ${k.active
+            ? `<span class="k-active">当前</span>`
+            : `<button class="k-act" data-act="${esc(p.id)}" data-id="${esc(k.id)}">切换</button>`}
+          ${k.external ? "" : `<button class="k-act danger" data-del="${esc(p.id)}" data-id="${esc(k.id)}">删除</button>`}
+        </div>`).join("")}
+    </div>`).join("") + addFormHTML();
+  bindAddForm();
+  bindKeyActions();
+}
+function bindAddForm() {
+  const btn = $("#k-save");
+  if (!btn) return;
+  const toggle = $("#k-toggle");
+  toggle.onclick = () => {
+    const inp = $("#k-key");
+    inp.type = inp.type === "password" ? "text" : "password";
+  };
+  btn.onclick = async () => {
+    const provider = $("#k-provider").value;
+    const label = $("#k-label").value.trim();
+    const key = $("#k-key").value.trim();
+    if (!provider || !key) { toast("请填写 provider 和密钥"); return; }
+    btn.disabled = true;
+    try {
+      const r = await api("/auth-keys", { method: "POST", body: JSON.stringify({ action: "save", provider, label, key }) });
+      afterKeyChange(r);
+      $("#k-key").value = ""; $("#k-label").value = "";
+      await loadKeys();
+    } catch (e) {
+      toast("保存失败: " + e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+function bindKeyActions() {
+  const box = $("#keys-body");
+  box.querySelectorAll("[data-act]").forEach(b => {
+    b.onclick = async () => {
+      try {
+        const r = await api("/auth-keys", { method: "POST", body: JSON.stringify({ action: "activate", provider: b.dataset.act, id: b.dataset.id }) });
+        afterKeyChange(r);
+        await loadKeys();
+      } catch (e) { toast("切换失败: " + e.message); }
+    };
+  });
+  box.querySelectorAll("[data-del]").forEach(b => {
+    b.onclick = async () => {
+      if (!confirm("确定删除该密钥？")) return;
+      try {
+        await api("/auth-keys", { method: "POST", body: JSON.stringify({ action: "delete", provider: b.dataset.del, id: b.dataset.id }) });
+        toast("已删除");
+        await loadKeys();
+      } catch (e) { toast("删除失败: " + e.message); }
+    };
+  });
+}
+function afterKeyChange(r) {
+  if (r && r.restarted) {
+    toast("密钥已切换，正在重连…");
+    setTimeout(() => { loadConfig().catch(() => {}); }, 2500);
+    connectSSE();
+  } else {
+    toast(r && r.message ? r.message : "密钥已保存，请手动重启 OpenCode 服务后刷新页面");
+  }
+}
+$("#keys-btn").onclick = async () => {
+  $("#keys").classList.remove("hidden");
+  try { await loadKeys(); } catch (e) { if (e.message !== "401") toast("加载密钥失败: " + e.message); }
+};
+$("#keys-close").onclick = () => $("#keys").classList.add("hidden");
+$("#keys").addEventListener("click", e => { if (e.target === $("#keys")) $("#keys").classList.add("hidden"); });
 
 /* ---------- toast ---------- */
 let toastTimer = null;
@@ -1073,7 +1674,13 @@ $("#msgs").addEventListener("click", e => {
   if (rs) rs.classList.toggle("expanded");
 });
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && !sseAbort && PWD) connectSSE();
+  if (!document.hidden) {
+    if (!sseAbort && PWD) connectSSE();
+    if (PWD) {
+      runSync();
+      loadSessions({ force: true }).catch(() => {});
+    }
+  }
 });
 
 /* ---------- init ---------- */
