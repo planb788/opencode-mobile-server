@@ -256,7 +256,7 @@ http://127.0.0.1:8787/opencode/
 
 当前模型提供上下文上限时，消息区上方会显示已用 tokens、上限和百分比；达到 70% 或 90% 时会改变提示颜色。它是估算提示，不会替代 OpenCode 的实际限制。
 
-当 Agent 通过 OpenCode `question.asked` 事件提问时，页面会显示问题面板，支持单选、多选、自定义文本和跳过。回答或跳过后，任务会继续执行；切换会话时不会显示其他会话的问题。
+当 Agent 通过 OpenCode `question.asked` 事件提问时，页面会显示问题面板，支持单选、多选、自定义文本和跳过。回答或跳过后，任务会继续执行；切换会话时不会显示其他会话的问题。客户端同时兼容新版 OpenCode 下发的 `question.v2.*` 和 `permission.v2.*` 事件名。
 
 生成中的消息通过 SSE 增量显示。连接中断时页面会自动重连，并在页面可见时轮询会话状态和最近消息作为兜底。顶部的停止按钮会调用 OpenCode 的 abort 接口。
 
@@ -304,7 +304,7 @@ Node 网关无法连接 `OPENCODE_API_URL`。检查 OpenCode 是否监听 4096 �
 
 ### 思考强度
 
-顶部“思考”选择器会在当前模型支持推理时显示。它传递 OpenCode 的 `variant` 参数，常见选项包括 `none`、`low`、`medium`、`high`、`max` 和 `xhigh`；具体可用选项以模型和 OpenCode 版本为准。选择会按模型保存在浏览器本地。
+顶部“思考”选择器会在当前模型支持推理时显示。它传递 OpenCode 的 `variant` 参数，常见选项包括 `none`、`minimal`、`low`、`medium`、`high`、`max` 和 `xhigh`；具体可用选项以模型和 OpenCode 版本为准。选择会按模型保存在浏览器本地。
 
 ### 页面能打开，但不是 `/opencode/`
 
@@ -345,7 +345,7 @@ This is a self-hosted mobile web client and deployment gateway for the OpenCode 
 - Model, Agent, and per-model reasoning-variant selection; when you switch sessions the model selector follows the model actually in use by that session.
 - Context usage display when the current model reports a context limit.
 - OpenCode AI question prompts with single-choice, multiple-choice, custom answers, and skip.
-- File attachments up to 20 MB per request.
+- File attachments up to 20 MB per request; files or images can be dropped straight onto the input box.
 - Manage provider API keys from the drawer; the gateway restarts OpenCode so the new key takes effect.
 - Stop-generation control, retry notifications, code-block copy, and a mobile PWA install entry point.
 - No frontend build step and no runtime npm dependencies.
@@ -586,7 +586,7 @@ The top bar can select the models, Agents, and reasoning variants returned by Op
 
 When the current model reports a context limit, the message area shows used tokens, the limit, and a percentage. The colors change at 70% and 90%. This is an estimate and does not replace OpenCode's own limit enforcement.
 
-When an Agent sends an OpenCode `question.asked` event, the page shows a question panel with single-choice, multiple-choice, custom text, and skip actions. The task continues after an answer or skip. Questions from another session are not shown in the current session.
+When an Agent sends an OpenCode `question.asked` event, the page shows a question panel with single-choice, multiple-choice, custom text, and skip actions. The task continues after an answer or skip. Questions from another session are not shown in the current session. The client also normalizes the `question.v2.*` and `permission.v2.*` event names used by newer OpenCode servers.
 
 Messages stream through SSE. The page reconnects after a disconnect and polls session status and recent messages while visible as a fallback. The stop button calls OpenCode's abort endpoint.
 

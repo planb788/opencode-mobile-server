@@ -59,7 +59,7 @@ http://127.0.0.1:8787/opencode/
 powershell -ExecutionPolicy Bypass -File .\scripts\start-windows.ps1 -SkipBackend
 ```
 
-新版页面包含模型、Agent、思考强度、上下文用量、AI 追问和 API 密钥面板。升级后如果仍看到旧页面，请强制刷新浏览器；模型选择异常时，可清除该网站本地存储中的 `oc_model`、`oc_agent` 和 `oc_variants` 后重新登录。
+新版页面包含模型、Agent、思考强度、上下文用量、AI 追问、拖拽上传附件和 API 密钥面板。升级后如果仍看到旧页面，请强制刷新浏览器；模型选择异常时，可清除该网站本地存储中的 `oc_model`、`oc_agent` 和 `oc_variants` 后重新登录。
 
 ## 查找 Windows 局域网 IP
 
@@ -240,7 +240,7 @@ When replacing the project files, keep the project-root `.env`; do not overwrite
 powershell -ExecutionPolicy Bypass -File .\scripts\start-windows.ps1 -SkipBackend
 ```
 
-The current page includes model, Agent, reasoning-variant, context-usage, AI-question, and API-key panels. If the browser still shows the old page after an upgrade, hard-refresh it. If model selection is inconsistent, clear `oc_model`, `oc_agent`, and `oc_variants` from this site's local storage and sign in again.
+The current page includes model, Agent, reasoning-variant, context-usage, AI-question, drag-and-drop attachments, and API-key panels. If the browser still shows the old page after an upgrade, hard-refresh it. If model selection is inconsistent, clear `oc_model`, `oc_agent`, and `oc_variants` from this site's local storage and sign in again.
 
 ## Find the Windows LAN IP
 
