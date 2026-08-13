@@ -12,7 +12,7 @@
 - 会话切换、历史消息缓存和游标分页加载。
 - 通过 OpenCode 事件接口实时显示生成内容；SSE 不可用时使用轮询同步状态和消息。
 - SSE 兼容 LF/CRLF 分隔符，生成中的文本和思考内容会逐块显示。
-- 支持选择模型、Agent 和思考强度（variant），并按模型保存选择；切换会话时模型选择器会自动同步到该会话当前实际使用的模型。
+- 支持选择模型、Agent 和思考强度（variant），并按模型保存选择；切换会话时模型选择器会自动同步到该会话当前实际使用的模型。模型列表会标注各模型支持的模态（🖼️ 图像、🎙️ 音频、🎬 视频、📄 文档），纯文本模型显示“纯文本”。
 - 支持显示当前会话的上下文用量和模型上下文上限。
 - 支持处理 OpenCode 的 AI 追问，可单选、多选、自定义回答或跳过。
 - 支持单次请求最多 20 MB 的文件附件，可把文件或图片直接拖进输入框。
@@ -252,7 +252,7 @@ http://127.0.0.1:8787/opencode/
 
 ## 新版客户端功能
 
-顶部可以选择 OpenCode 返回的模型、Agent 和思考强度。思考强度只在当前模型支持推理时显示，可用值由模型配置决定，常见值包括 `none`、`minimal`、`low`、`medium`、`high`、`max` 和 `xhigh`。
+顶部可以选择 OpenCode 返回的模型、Agent 和思考强度。每个模型后面会显示它支持的输入模态（图像、音频、视频、文档）以及输出模态（如“生成🖼️”表示可以生成图像）；没有额外模态的模型显示“纯文本”。模态信息来自 OpenCode 的 provider 配置，OpenCode 版本过旧时可能不显示。思考强度只在当前模型支持推理时显示，可用值由模型配置决定，常见值包括 `none`、`minimal`、`low`、`medium`、`high`、`max` 和 `xhigh`。
 
 当前模型提供上下文上限时，消息区上方会显示已用 tokens、上限和百分比；达到 70% 或 90% 时会改变提示颜色。它是估算提示，不会替代 OpenCode 的实际限制。
 
@@ -342,7 +342,7 @@ This is a self-hosted mobile web client and deployment gateway for the OpenCode 
 - Mobile-first dark interface with safe-area support.
 - Session switching with cached history and cursor-based pagination.
 - Live generation updates through the OpenCode event API, with polling fallback when SSE is unavailable.
-- Model, Agent, and per-model reasoning-variant selection; when you switch sessions the model selector follows the model actually in use by that session.
+- Model, Agent, and per-model reasoning-variant selection; when you switch sessions the model selector follows the model actually in use by that session. The model list shows each model's supported modalities (🖼️ image, 🎙️ audio, 🎬 video, 📄 document); text-only models are labeled "纯文本".
 - Context usage display when the current model reports a context limit.
 - OpenCode AI question prompts with single-choice, multiple-choice, custom answers, and skip.
 - File attachments up to 20 MB per request; files or images can be dropped straight onto the input box.
@@ -582,7 +582,7 @@ Use absolute paths for `OPENCODE_AUTH_FILE` and `OPENCODE_AUTH_KEYS_FILE` when p
 
 ### Current Client Features
 
-The top bar can select the models, Agents, and reasoning variants returned by OpenCode. The available variants depend on the model configuration and commonly include `none`, `minimal`, `low`, `medium`, `high`, `max`, and `xhigh`.
+The top bar can select the models, Agents, and reasoning variants returned by OpenCode. Each model name is followed by its input modalities (image, audio, video, document) and output modalities (e.g. "生成🖼️" means it can generate images); models without extra modalities show "纯文本". Modality info comes from the OpenCode provider configuration and may be absent with older OpenCode versions. The available variants depend on the model configuration and commonly include `none`, `minimal`, `low`, `medium`, `high`, `max`, and `xhigh`.
 
 When the current model reports a context limit, the message area shows used tokens, the limit, and a percentage. The colors change at 70% and 90%. This is an estimate and does not replace OpenCode's own limit enforcement.
 

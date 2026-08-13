@@ -1495,6 +1495,16 @@ function startSyncLoop() {
 }
 
 /* ---------- model / agent ---------- */
+const MODALITY_ICONS = { image: "🖼️", audio: "🎙️", video: "🎬", pdf: "📄" };
+function modalityBadges(cap) {
+  const input = (cap && cap.input) || {}, output = (cap && cap.output) || {};
+  const ins = Object.keys(MODALITY_ICONS).filter(k => input[k]);
+  const outs = Object.keys(MODALITY_ICONS).filter(k => output[k] && !ins.includes(k));
+  const parts = [];
+  if (ins.length) parts.push(ins.map(k => MODALITY_ICONS[k]).join(""));
+  if (outs.length) parts.push("生成" + outs.map(k => MODALITY_ICONS[k]).join(""));
+  return parts.length ? parts.join(" ") : "纯文本";
+}
 async function loadConfig() {
   const cfg = await api("/config/providers");
   state.providers = cfg.providers || [];
@@ -1504,7 +1514,7 @@ async function loadConfig() {
   for (const p of state.providers) {
     for (const [mid, m] of Object.entries(p.models || {})) {
       groups.set(p.id, groups.get(p.id) || []);
-      const model = { id: mid, name: m.name || mid, providerID: p.id, reasoning: Boolean(m.reasoning || m.capabilities?.reasoning), variants: m.variants || {} };
+      const model = { id: mid, name: m.name || mid, providerID: p.id, reasoning: Boolean(m.reasoning || m.capabilities?.reasoning), variants: m.variants || {}, capabilities: m.capabilities || {}, modalities: modalityBadges(m.capabilities) };
       groups.get(p.id).push(model);
       state.modelMeta.set(`${p.id}/${mid}`, model);
     }
@@ -1516,7 +1526,7 @@ async function loadConfig() {
     for (const m of ms) {
       const o = document.createElement("option");
       o.value = JSON.stringify({ providerID: pid, modelID: m.id });
-      o.textContent = m.name;
+      o.textContent = m.name + " " + m.modalities;
       og.appendChild(o);
     }
     sel.appendChild(og);
