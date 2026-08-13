@@ -12,10 +12,10 @@
 - 会话切换、历史消息缓存和游标分页加载。
 - 通过 OpenCode 事件接口实时显示生成内容；SSE 不可用时使用轮询同步状态和消息。
 - SSE 兼容 LF/CRLF 分隔符，生成中的文本和思考内容会逐块显示。
-- 支持选择模型、Agent 和思考强度（variant），并按模型保存选择。
+- 支持选择模型、Agent 和思考强度（variant），并按模型保存选择；切换会话时模型选择器会自动同步到该会话当前实际使用的模型。
 - 支持显示当前会话的上下文用量和模型上下文上限。
 - 支持处理 OpenCode 的 AI 追问，可单选、多选、自定义回答或跳过。
-- 支持单次请求最多 20 MB 的文件附件。
+- 支持单次请求最多 20 MB 的文件附件，可把文件或图片直接拖进输入框。
 - 侧边栏直接管理各 provider 的 API 密钥，切换后自动重启 OpenCode 服务生效。
 - 支持停止生成、重试状态提示、代码块复制和移动端 PWA 安装入口。
 - 前端无需构建，运行时无需安装 npm 依赖。
@@ -260,7 +260,7 @@ http://127.0.0.1:8787/opencode/
 
 生成中的消息通过 SSE 增量显示。连接中断时页面会自动重连，并在页面可见时轮询会话状态和最近消息作为兜底。顶部的停止按钮会调用 OpenCode 的 abort 接口。
 
-回复使用轻量 Markdown，支持标题、粗体、斜体、删除线、行内代码、代码块、引用、无序列表、链接、简单表格和分隔线；不提供完整 Markdown 解析或代码高亮。附件会转成 Data URL 后发送，单次消息选择的文件原始大小合计最多 20 MB，且需要同时填写文本消息。反向代理的请求体限制应大于 20 MB，项目 Nginx 模板使用 50 MB。
+回复使用轻量 Markdown，支持标题、粗体、斜体、删除线、行内代码、代码块、引用、无序列表、链接、简单表格和分隔线；不提供完整 Markdown 解析或代码高亮。附件会转成 Data URL 后发送，单次消息选择的文件原始大小合计最多 20 MB，支持直接把文件或图片拖进输入框；仅带附件也可以直接发送。反向代理的请求体限制应大于 20 MB，项目 Nginx 模板使用 50 MB。
 
 页面提供 PWA 安装清单，但不包含离线缓存。密码、当前会话、模型、Agent 和思考强度保存在当前浏览器的本地存储中；消息内容主要在页面内存中缓存，刷新后会重新从 OpenCode 加载。
 
@@ -342,7 +342,7 @@ This is a self-hosted mobile web client and deployment gateway for the OpenCode 
 - Mobile-first dark interface with safe-area support.
 - Session switching with cached history and cursor-based pagination.
 - Live generation updates through the OpenCode event API, with polling fallback when SSE is unavailable.
-- Model, Agent, and per-model reasoning-variant selection.
+- Model, Agent, and per-model reasoning-variant selection; when you switch sessions the model selector follows the model actually in use by that session.
 - Context usage display when the current model reports a context limit.
 - OpenCode AI question prompts with single-choice, multiple-choice, custom answers, and skip.
 - File attachments up to 20 MB per request.
@@ -590,7 +590,7 @@ When an Agent sends an OpenCode `question.asked` event, the page shows a questio
 
 Messages stream through SSE. The page reconnects after a disconnect and polls session status and recent messages while visible as a fallback. The stop button calls OpenCode's abort endpoint.
 
-Replies use lightweight Markdown: headings, bold, italics, strikethrough, inline code, code blocks, blockquotes, unordered lists, links, simple tables, and horizontal rules. It is not a full Markdown parser and does not provide syntax highlighting. Attachments are sent as Data URLs; the original files selected for one message may total at most 20 MB, and a text message is required. A reverse proxy should allow more than 20 MB for the encoded request; the included Nginx template allows 50 MB.
+Replies use lightweight Markdown: headings, bold, italics, strikethrough, inline code, code blocks, blockquotes, unordered lists, links, simple tables, and horizontal rules. It is not a full Markdown parser and does not provide syntax highlighting. Attachments are sent as Data URLs; the original files selected for one message may total at most 20 MB, and files or images can be dropped straight onto the input box; a message with only attachments can be sent directly. A reverse proxy should allow more than 20 MB for the encoded request; the included Nginx template allows 50 MB.
 
 The page includes a PWA manifest but has no offline cache. The current browser stores the password, current session, model, Agent, and reasoning variant in local storage. Message history is primarily an in-memory cache and is loaded again from OpenCode after a refresh.
 

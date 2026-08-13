@@ -74,6 +74,11 @@ header select {
   appearance: none; cursor: pointer;
 }
 header select#variant-select { max-width: 96px; }
+#header-controls {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+}
+#header-controls select { min-width: 0; }
+#header-controls select[hidden] { display: none; }
 /* ---------- context bar ---------- */
 #ctx {
   display: flex; align-items: center; gap: 10px;
@@ -94,7 +99,7 @@ header select#variant-select { max-width: 96px; }
 #ctx-label { font-size: 11px; color: var(--muted); white-space: nowrap; flex: none; }
 /* ---------- messages ---------- */
 #msgs {
-  flex: 1; overflow-y: auto; padding: 14px 14px 8px;
+  flex: 1; min-height: 0; overflow-y: auto; padding: 14px 14px 8px;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
@@ -201,7 +206,9 @@ header select#variant-select { max-width: 96px; }
 .atchip .as { font-size: 11px; flex: none; }
 .atchip .ax { border: none; background: none; color: var(--muted); font-size: 14px; padding: 0 4px; cursor: pointer; }
 .atchip .ax:active { color: var(--err); }
-#input-wrap { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 8px 12px; }
+#composer.drag, #attach-list.drag { outline: 2px dashed var(--accent); outline-offset: -4px; }
+#composer.drag { border-radius: 12px; }
+#input-wrap { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 8px 12px; }
 #input {
   width: 100%; background: none; border: none; color: var(--text);
   font: inherit; font-size: 15px; resize: none; outline: none;
@@ -358,6 +365,33 @@ header select#variant-select { max-width: 96px; }
 #q-send { background: var(--accent); color: #04211d; }
 #q-send:disabled { background: var(--panel); color: var(--muted); }
 #q-skip { background: var(--panel); color: var(--muted); border: 1px solid var(--border); }
+@media (max-width: 600px) {
+  header {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  #header-controls {
+    order: 1;
+    flex: 1 0 100%;
+    width: 100%;
+  }
+  #header-controls select {
+    flex: 1 1 0;
+    width: 0;
+    max-width: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #title { font-size: 13px; }
+  #msgs {
+    padding: 10px 10px 6px;
+    /* Streaming updates repeatedly move the viewport; smooth scrolling cannot keep up on mobile. */
+    scroll-behavior: auto;
+  }
+}
 </style>
 </head>
 <body>
@@ -365,9 +399,11 @@ header select#variant-select { max-width: 96px; }
   <header>
     <button class="btn" id="menu-btn">☰</button>
     <div id="title">OpenCode</div>
-    <select id="model-select" title="模型"></select>
-    <select id="agent-select" title="Agent"></select>
-    <select id="variant-select" title="思考强度" hidden></select>
+    <div id="header-controls">
+      <select id="model-select" title="模型"></select>
+      <select id="agent-select" title="Agent"></select>
+      <select id="variant-select" title="思考强度" hidden></select>
+    </div>
     <button class="btn" id="new-btn" title="新会话">✚</button>
     <span id="status-dot"></span>
   </header>
@@ -472,6 +508,7 @@ const state = {
   sessionsLoading: false,
   questions: new Map(), // requestID -> question request (待回答)
   question: null,       // 当前展示的问题 requestID
+  modelManual: false,   // 用户是否手动改过模型（手动选择期间不自动同步会话模型）
   retryShown: null      // 当前已提示的 retry 事件 id（去重）
 };
 
@@ -542,17 +579,18 @@ function md(text) {
 }
 
 /* ---------- render: message parts ---------- */
-function renderPart(p, streaming) {
+function renderPart(p, streaming, partId) {
+  const partAttr = partId == null ? "" : ` data-part-id="${esc(String(partId))}"`;
   switch (p.type) {
     case "text": {
       // Markdown parsing on every token is needlessly expensive on mobile.
       // Keep the live part as plain escaped text and format it once it settles.
       const body = streaming ? `<div class="stream-plain">${esc(p.text || "")}</div>` : `<div class="md">${md(p.text || "")}</div>`;
-      return `<div class="text${streaming ? " cursor-blink" : ""}">${body}</div>`;
+      return `<div class="text${streaming ? " cursor-blink" : ""}"${partAttr}>${body}</div>`;
     }
     case "reasoning": {
       const body = p.text ? (streaming ? `<div class="stream-plain">${esc(p.text)}</div>` : md(p.text)) : "";
-      return `<div class="reasoning${streaming ? " streaming" : ""}"><span class="hint">${streaming ? "🧠 思考中… ▾" : "🧠 思考过程 ▾"}</span>${body}</div>`;
+      return `<div class="reasoning${streaming ? " streaming" : ""}"${partAttr}><span class="hint">${streaming ? "🧠 思考中… ▾" : "🧠 思考过程 ▾"}</span>${body}</div>`;
     }
     case "tool": {
       const st = p.state || {};
@@ -592,7 +630,7 @@ function renderMessage(entry, streaming) {
     return `<div class="msg assistant error"><div class="role">✕</div><div class="bubble"><div class="text">错误: ${esc(emsg || JSON.stringify(entry.info.error))}</div></div></div>`;
   }
   const last = entry.parts.length - 1;
-  const html = entry.parts.map((p, i) => renderPart(p.part, streaming && i === last)).join("");
+  const html = entry.parts.map((p, i) => renderPart(p.part, streaming && i === last, p.id)).join("");
   const model = entry.info.model && entry.info.model.modelID ? entry.info.model.modelID : "";
   return `<div class="msg assistant" data-mid="${entry.id}"><div class="role">${esc(model)}</div><div class="bubble"><div class="parts">${html}</div></div></div>`;
 }
@@ -700,6 +738,20 @@ function renderChat() {
   list.querySelectorAll(".msg").forEach(el => { state.msgEls[el.dataset.mid] = el; });
   if (atBottom) box.scrollTop = box.scrollHeight;
 }
+function updateLiveMessage(el, entry) {
+  const last = entry.parts[entry.parts.length - 1];
+  const part = last && last.part;
+  if (!part || (part.type !== "text" && part.type !== "reasoning")) return false;
+  const parts = el.querySelector(".parts");
+  const target = parts && parts.lastElementChild;
+  if (!target || target.dataset.partId !== String(last.id)) return false;
+  if (part.type === "text" && !target.classList.contains("text")) return false;
+  if (part.type === "reasoning" && !target.classList.contains("reasoning")) return false;
+  const plain = target.querySelector(".stream-plain");
+  if (!plain) return false;
+  plain.textContent = part.text || "";
+  return true;
+}
 function updateHistoryControls(sid, hasMessages) {
   if (sid !== state.current) return;
   const top = $("#history-top");
@@ -718,6 +770,10 @@ function renderMsg(mid) {
   const box = $("#msgs");
   const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
   const streaming = state.running && idx === entries.length - 1;
+  if (streaming && updateLiveMessage(old, entries[idx])) {
+    if (atBottom) box.scrollTop = box.scrollHeight;
+    return;
+  }
   old.outerHTML = renderMessage(entries[idx], streaming);
   state.msgEls[mid] = $("#message-list").querySelector(`.msg[data-mid="${mid}"]`);
   if (atBottom) box.scrollTop = box.scrollHeight;
@@ -771,6 +827,7 @@ async function loadSessions({ force = false } = {}) {
   sessionsRequest = api("/session")
     .then(list => {
       state.sessions = (list || []).sort((a, b) => (b.time?.updated || 0) - (a.time?.updated || 0));
+      if (!state.modelManual && state.current) syncModelForSession(state.current);
       return state.sessions;
     })
     .finally(() => {
@@ -805,6 +862,8 @@ async function switchSession(id) {
   historyAbort = controller;
   state.current = id;
   state.running = false;
+  state.modelManual = false;
+  syncModelForSession(id);
   updateRunningUI();
   const curQ = currentQuestion();
   if (curQ && curQ.sessionID !== id) closeQuestion();
@@ -830,6 +889,7 @@ async function switchSession(id) {
   }
   if (state.current === id && historyRequestId === requestId) {
     state.loading = false;
+    syncModelForSession(id);
     renderChat();
   }
   if (historyAbort === controller) historyAbort = null;
@@ -903,6 +963,7 @@ async function newSession() {
   state.current = pendId;
   state.running = false;
   state.loading = false;
+  state.modelManual = false;
   updateRunningUI();
   state.msgs.set(pendId, []);
   state.msgEls = {};
@@ -973,9 +1034,8 @@ function renderAttachments() {
   ).join("");
 }
 $("#attach-btn").onclick = () => $("#file-input").click();
-$("#file-input").addEventListener("change", e => {
-  const files = Array.from(e.target.files || []);
-  e.target.value = "";
+function addFiles(fileList) {
+  const files = Array.from(fileList || []);
   if (!files.length) return;
   const total = state.attachments.reduce((s, a) => s + a.size, 0) + files.reduce((s, f) => s + f.size, 0);
   if (total > MAX_TOTAL) { toast("附件总大小不能超过 20MB"); return; }
@@ -992,7 +1052,40 @@ $("#file-input").addEventListener("change", e => {
     reader.onerror = () => toast("读取文件失败: " + f.name);
     reader.readAsDataURL(f);
   }
+}
+$("#file-input").addEventListener("change", e => {
+  addFiles(e.target.files);
+  e.target.value = "";
 });
+/* 拖拽文件/图片到输入区直接添加附件 */
+function bindDropTarget(el) {
+  let depth = 0;
+  el.addEventListener("dragenter", e => {
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes("Files")) return;
+    e.preventDefault();
+    depth++;
+    el.classList.add("drag");
+  });
+  el.addEventListener("dragover", e => {
+    if (!e.dataTransfer) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+  el.addEventListener("dragleave", () => {
+    depth = Math.max(0, depth - 1);
+    if (!depth) el.classList.remove("drag");
+  });
+  el.addEventListener("drop", e => {
+    e.preventDefault();
+    depth = 0;
+    el.classList.remove("drag");
+    addFiles(e.dataTransfer && e.dataTransfer.files);
+  });
+}
+bindDropTarget($("#composer"));
+bindDropTarget($("#attach-list"));
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", e => e.preventDefault());
 $("#attach-list").addEventListener("click", e => {
   const btn = e.target.closest(".ax");
   if (!btn) return;
@@ -1004,7 +1097,7 @@ $("#attach-list").addEventListener("click", e => {
 async function send() {
   const inp = $("#input");
   const text = inp.value.trim();
-  if (!text || state.running) return;
+  if (state.running || (!text && !state.attachments.length)) return;
   closeQuestion();
   state.retryShown = null;
   try {
@@ -1020,7 +1113,7 @@ async function send() {
     renderChat(); scrollBottom();
     const parts = [
       ...state.attachments.map(a => ({ type: "file", mime: a.mime, url: a.dataUrl, filename: a.name })),
-      { type: "text", text }
+      ...(text ? [{ type: "text", text }] : [])
     ];
     state.attachments = [];
     renderAttachments();
@@ -1239,7 +1332,15 @@ function scheduleReconnect() {
 function handleSSE(data) {
   let ev;
   try { ev = JSON.parse(data); } catch (e) { return; }
-    const t = ev.type, pr = ev.properties || {};
+    let t = ev.type, pr = ev.properties || {};
+    // opencode serve 下发的是 v2 事件名（question.v2.asked / permission.v2.asked 等），
+    // 数据在 ev.data；与官方前端保持一致做归一化。
+    if (ev.type === "question.v2.asked") { t = "question.asked"; pr = ev.data || {}; }
+    else if (ev.type === "question.v2.replied") { t = "question.replied"; pr = ev.data || {}; }
+    else if (ev.type === "question.v2.rejected") { t = "question.rejected"; pr = ev.data || {}; }
+    else if (ev.type === "permission.v2.asked") { t = "permission.asked"; pr = ev.data || {}; }
+    else if (ev.type === "permission.v2.replied") { t = "permission.replied"; pr = ev.data || {}; }
+    else if (ev.type === "permission.v2.rejected") { t = "permission.rejected"; pr = ev.data || {}; }
     if (t === "session.idle" || (t === "session.status" && pr.status && pr.status.type === "idle")) {
       if (pr.sessionID === state.current && state.running) {
         state.running = false; updateRunningUI();
@@ -1307,6 +1408,7 @@ function handleSSE(data) {
         if (s.id === state.current) {
           $("#title").textContent = s.title || "OpenCode";
           updateContextBar();
+          if (!state.modelManual) syncModelForSession(s.id);
         }
       }
     }
@@ -1426,6 +1528,7 @@ async function loadConfig() {
   renderVariantSelect();
   sel.onchange = () => {
     state.model = JSON.parse(sel.value);
+    state.modelManual = true;
     localStorage.setItem("oc_model", JSON.stringify(state.model));
     state.variant = null;
     renderVariantSelect();
@@ -1462,6 +1565,47 @@ function renderVariantSelect() {
     const store = variantStore(); store[key] = state.variant;
     localStorage.setItem("oc_variants", JSON.stringify(store));
   };
+}
+/* 会话模型同步：切换会话或会话模型变化时，让模型选择器跟随会话实际使用的模型 */
+function sessionModelInfo(m) {
+  if (!m) return null;
+  const mid = m.modelID !== undefined ? m.modelID : m.id;
+  if (!m.providerID || !mid) return null;
+  return { providerID: m.providerID, modelID: mid, variant: m.variant || null };
+}
+function applyModelChoice(m) {
+  if (!m || !state.modelMeta.has(`${m.providerID}/${m.modelID}`)) return false;
+  const cur = state.model;
+  if (cur && cur.providerID === m.providerID && cur.modelID === m.modelID && !m.variant) return true;
+  state.model = { providerID: m.providerID, modelID: m.modelID };
+  const sel = $("#model-select");
+  if (sel.options.length) sel.value = JSON.stringify(state.model);
+  localStorage.setItem("oc_model", JSON.stringify(state.model));
+  state.variant = null;
+  renderVariantSelect();
+  if (m.variant) {
+    const vsel = $("#variant-select");
+    if (!vsel.hidden && Array.from(vsel.options).some(o => o.value === m.variant)) {
+      state.variant = m.variant;
+      vsel.value = m.variant;
+      const key = `${m.providerID}/${m.modelID}`;
+      const store = variantStore();
+      store[key] = m.variant;
+      localStorage.setItem("oc_variants", JSON.stringify(store));
+    }
+  }
+  return true;
+}
+function syncModelForSession(id) {
+  const s = state.sessions.find(x => x.id === id);
+  if (applyModelChoice(sessionModelInfo(s && s.model))) return;
+  const entries = state.msgs.get(id) || [];
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const info = entries[i] && entries[i].info;
+    if (!info) continue;
+    const m = info.model || (info.providerID && info.modelID ? { providerID: info.providerID, modelID: info.modelID, variant: info.variant || null } : null);
+    if (m && applyModelChoice(sessionModelInfo(m))) return;
+  }
 }
 async function boot() {
   const sid = localStorage.getItem("oc_session");
