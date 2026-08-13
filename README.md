@@ -4,6 +4,12 @@
 
 本文档提供完整的中文说明和完整的 English documentation，英文文档位于下方。
 
+## 界面预览 / Screenshots
+
+| 主界面 | 会话列表（点开 ☰ 菜单） |
+| :-: | :-: |
+| <img src="docs/oms_ui_preview.webp" alt="主界面" width="300" height="503"> | <img src="docs/ui_1.webp" alt="会话列表" width="300" height="487"> |
+
 ## 中文文档
 
 ## 功能
